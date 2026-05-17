@@ -59,6 +59,13 @@ class ExtractTests(unittest.TestCase):
         self.assertEqual(records[0].kind, "openapi")
         self.assertEqual(records[0].name, "create_item")
 
+    def test_extracts_yaml_tool_manifest(self) -> None:
+        records, errors = extract_tools([Path("examples/mcp-tools.yml")])
+        self.assertEqual(errors, [])
+        self.assertEqual(len(records), 2)
+        self.assertEqual(records[0].source_path, "examples/mcp-tools.yml")
+        self.assertEqual({record.name for record in records}, {"docs_search", "docs_read"})
+
     def test_summary_and_json_report(self) -> None:
         records, errors = extract_tools([Path("examples/mcp-tools.json")])
         summary = summarize(records)

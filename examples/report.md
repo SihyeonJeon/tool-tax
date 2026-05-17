@@ -4,10 +4,10 @@ Grade: **lean**
 
 | Metric | Value |
 | --- | ---: |
-| Tools | 5 |
-| Full tool tax | 956 est. tokens |
-| Slim index | 236 est. tokens |
-| Potential savings | 720 est. tokens (75.3%) |
+| Tools | 7 |
+| Full tool tax | 1,144 est. tokens |
+| Slim index | 309 est. tokens |
+| Potential savings | 835 est. tokens (73.0%) |
 | Worst tool | 255 est. tokens |
 
 ## Heaviest Tools
@@ -19,6 +19,8 @@ Grade: **lean**
 | `shell_run` | 202 | 48 | `examples/mcp-tools.json/tools/3` |
 | `browser_snapshot` | 149 | 45 | `examples/mcp-tools.json/tools/2` |
 | `github_create_issue` | 135 | 47 | `examples/mcp-tools.json/tools/1` |
+| `docs_read` | 97 | 36 | `examples/mcp-tools.yml/tools/1` |
+| `docs_search` | 91 | 37 | `examples/mcp-tools.yml/tools/0` |
 
 ## What To Do
 

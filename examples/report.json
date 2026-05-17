@@ -1,10 +1,10 @@
 {
   "summary": {
-    "tool_count": 5,
-    "total_tax_tokens": 956,
-    "total_index_tokens": 236,
-    "estimated_savings_tokens": 720,
-    "estimated_savings_percent": 75.31380753138075,
+    "tool_count": 7,
+    "total_tax_tokens": 1144,
+    "total_index_tokens": 309,
+    "estimated_savings_tokens": 835,
+    "estimated_savings_percent": 72.9895104895105,
     "worst_tool_tokens": 255,
     "grade": "lean"
   },
@@ -73,6 +73,30 @@
       "index_savings_tokens": 88,
       "index_savings_percent": 65.19,
       "schema_ref": "schemas/github_create_issue.json"
+    },
+    {
+      "name": "docs_read",
+      "description": "Read one project document by stable ID.",
+      "source_path": "examples/mcp-tools.yml",
+      "pointer": "/tools/1",
+      "kind": "tool",
+      "tax_tokens": 97,
+      "index_tokens": 36,
+      "index_savings_tokens": 61,
+      "index_savings_percent": 62.89,
+      "schema_ref": "schemas/docs_read.json"
+    },
+    {
+      "name": "docs_search",
+      "description": "Search project docs by natural-language query.",
+      "source_path": "examples/mcp-tools.yml",
+      "pointer": "/tools/0",
+      "kind": "tool",
+      "tax_tokens": 91,
+      "index_tokens": 37,
+      "index_savings_tokens": 54,
+      "index_savings_percent": 59.34,
+      "schema_ref": "schemas/docs_search.json"
     }
   ],
   "errors": []

@@ -8,9 +8,9 @@ Safe claim:
 Current example:
 
 - 5 demo tools
-- 956 estimated full-schema tokens
-- 236 estimated slim-index tokens
-- 75.3% smaller index in the included fixture
+- 1,144 estimated full-schema tokens
+- 309 estimated slim-index tokens
+- 73.0% smaller index in the included fixture
 
 Claims not made:
 
@@ -18,4 +18,3 @@ Claims not made:
 - Runtime accuracy improvement.
 - Complete MCP compatibility.
 - Security validation of tool schemas.
-

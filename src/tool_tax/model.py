@@ -32,3 +32,33 @@ class ScanSummary:
     worst_tool_tokens: int
     grade: str
 
+
+@dataclass(frozen=True)
+class DiffRecord:
+    status: str
+    name: str
+    base_tax_tokens: int
+    head_tax_tokens: int
+    delta_tax_tokens: int
+    base_index_tokens: int
+    head_index_tokens: int
+    delta_index_tokens: int
+    base_source: str
+    head_source: str
+
+
+@dataclass(frozen=True)
+class DiffSummary:
+    base_tool_count: int
+    head_tool_count: int
+    added_count: int
+    removed_count: int
+    changed_count: int
+    unchanged_count: int
+    base_tax_tokens: int
+    head_tax_tokens: int
+    delta_tax_tokens: int
+    base_index_tokens: int
+    head_index_tokens: int
+    delta_index_tokens: int
+    worst_tool_delta_tokens: int

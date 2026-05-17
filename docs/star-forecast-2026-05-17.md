@@ -33,7 +33,7 @@ High-star repos in this category usually have at least one of:
 `tool-tax` currently has:
 
 - clear category fit: MCP/tool schema bloat;
-- dependency-free CLI;
+- small CLI with one runtime dependency;
 - CI budget gate;
 - generated progressive-loading pack;
 - concise README;
@@ -53,8 +53,8 @@ After sharing in targeted MCP/Claude/Codex communities with a short demo:
 
 - first 30 days: 40-120 stars.
 
-If the next release adds YAML support, `tool-tax diff`, a GitHub Action comment,
-and scans of real public MCP catalogs:
+With YAML support, `tool-tax diff`, a GitHub Action comment path, and scans of
+large public catalogs:
 
 - realistic 60-90 day range: 100-300 stars.
 
@@ -77,8 +77,7 @@ and scans of real public MCP catalogs:
 ## Work To Do Next
 
 - Publish to PyPI.
-- Add YAML support.
-- Add `tool-tax diff`.
-- Add PR-comment GitHub Action.
-- Run `tool-tax` on popular public MCP/tool catalogs and publish the reports.
-
+- Add MCP-native scan reports beyond OpenAPI catalogs.
+- Add OpenAPI slicing by tag/path.
+- Explore a runtime MCP proxy/router only if it can beat existing SOTA tools in
+  a narrow workflow.

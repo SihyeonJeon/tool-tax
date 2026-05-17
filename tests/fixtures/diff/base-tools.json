@@ -1,0 +1,15 @@
+{
+  "tools": [
+    {
+      "name": "search_docs",
+      "description": "Search docs.",
+      "inputSchema": {
+        "type": "object",
+        "required": ["query"],
+        "properties": {
+          "query": {"type": "string"}
+        }
+      }
+    }
+  ]
+}

@@ -15,5 +15,17 @@ jobs:
       - uses: actions/setup-python@v6.2.0
         with:
           python-version: ${{ matrix.python-version }}
+      - run: python -m pip install -e .
       - run: make test
       - run: make report
+      - run: tool-tax diff tests/fixtures/diff/base-tools.json tests/fixtures/diff/head-tools.json --max-delta-tokens 500
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6.0.2
+      - uses: actions/setup-python@v6.2.0
+        with:
+          python-version: "3.12"
+      - run: python -m pip install build twine
+      - run: python -m build
+      - run: python -m twine check dist/*

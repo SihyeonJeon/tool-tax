@@ -1,0 +1,26 @@
+name: tool-tax-pr
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  budget:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6.0.2
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v6.2.0
+        with:
+          python-version: "3.12"
+      - run: git show origin/${{ github.base_ref }}:mcp-tools.json > /tmp/base-tools.json
+      - uses: SihyeonJeon/tool-tax@main
+        with:
+          base-path: /tmp/base-tools.json
+          path: mcp-tools.json
+          max-delta-tokens: "500"
+          comment-pr: "true"

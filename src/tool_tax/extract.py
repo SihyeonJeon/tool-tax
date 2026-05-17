@@ -4,6 +4,8 @@ import json
 from pathlib import Path
 from typing import Any, Iterable
 
+import yaml
+
 from .model import ToolRecord
 from .tokenize import estimate_tokens
 
@@ -128,30 +130,34 @@ def extract_openapi(data: dict[str, Any], source: Path) -> list[ToolRecord]:
     return records
 
 
-def walk_json(obj: Any, source: Path, pointer: str = "") -> Iterable[ToolRecord]:
+def walk_data(obj: Any, source: Path, pointer: str = "") -> Iterable[ToolRecord]:
     if isinstance(obj, dict):
         if is_tool_like(obj):
             yield record_from_tool_like(obj, source, pointer or "/")
             return
         for key, value in obj.items():
             escaped = str(key).replace("~", "~0").replace("/", "~1")
-            yield from walk_json(value, source, f"{pointer}/{escaped}")
+            yield from walk_data(value, source, f"{pointer}/{escaped}")
     elif isinstance(obj, list):
         for index, value in enumerate(obj):
-            yield from walk_json(value, source, f"{pointer}/{index}")
+            yield from walk_data(value, source, f"{pointer}/{index}")
 
 
-def load_json(path: Path) -> Any:
-    return json.loads(path.read_text(encoding="utf-8"))
+def load_data(path: Path) -> Any:
+    text = path.read_text(encoding="utf-8")
+    if path.suffix.lower() in {".yaml", ".yml"}:
+        return yaml.safe_load(text)
+    return json.loads(text)
 
 
 def candidate_files(paths: list[Path]) -> list[Path]:
     files: list[Path] = []
+    suffixes = {".json", ".yaml", ".yml"}
     for path in paths:
-        if path.is_file() and path.suffix.lower() == ".json":
+        if path.is_file() and path.suffix.lower() in suffixes:
             files.append(path)
         elif path.is_dir():
-            files.extend(sorted(p for p in path.rglob("*.json") if ".git" not in p.parts))
+            files.extend(sorted(p for p in path.rglob("*") if p.suffix.lower() in suffixes and ".git" not in p.parts))
     return sorted(set(files))
 
 
@@ -160,7 +166,7 @@ def extract_tools(paths: list[Path]) -> tuple[list[ToolRecord], list[str]]:
     errors: list[str] = []
     for path in candidate_files(paths):
         try:
-            data = load_json(path)
+            data = load_data(path)
         except Exception as exc:  # noqa: BLE001
             errors.append(f"{path}: {exc}")
             continue
@@ -169,7 +175,7 @@ def extract_tools(paths: list[Path]) -> tuple[list[ToolRecord], list[str]]:
             if openapi_records:
                 records.extend(openapi_records)
                 continue
-        records.extend(walk_json(data, path))
+        records.extend(walk_data(data, path))
     seen: set[tuple[str, str, str]] = set()
     unique: list[ToolRecord] = []
     for record in records:

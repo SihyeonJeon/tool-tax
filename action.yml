@@ -1,0 +1,80 @@
+name: tool-tax
+description: Measure agent tool catalog token tax in CI.
+inputs:
+  path:
+    description: File or directory to scan as the head/current catalog.
+    default: "."
+  base-path:
+    description: Optional base file or directory. When set, the action runs tool-tax diff.
+    default: ""
+  out:
+    description: Markdown report path.
+    default: "tool-tax-report.md"
+  max-tokens:
+    description: Fail scan if total tool tax is above this budget.
+    default: ""
+  max-tool-tokens:
+    description: Fail scan if one tool is above this budget.
+    default: ""
+  max-delta-tokens:
+    description: Fail diff if total tool tax grows by more than this.
+    default: ""
+  max-tool-delta-tokens:
+    description: Fail diff if one tool grows by more than this.
+    default: ""
+  fail-on-increase:
+    description: Fail diff whenever total tool tax increases.
+    default: "false"
+  comment-pr:
+    description: "Create or update a tool-tax PR comment. Requires pull-requests: write."
+    default: "false"
+outputs:
+  report-path:
+    description: Path to the Markdown report.
+    value: ${{ inputs.out }}
+  exit-code:
+    description: tool-tax exit code.
+    value: ${{ steps.run-tool-tax.outputs.exit-code }}
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      run: python -m pip install "$GITHUB_ACTION_PATH"
+    - id: run-tool-tax
+      shell: bash
+      run: |
+        set -uo pipefail
+        if [ -n "${{ inputs.base-path }}" ]; then
+          args=(diff "${{ inputs.base-path }}" "${{ inputs.path }}" --format md --out "${{ inputs.out }}" --github-step-summary)
+          if [ "${{ inputs.fail-on-increase }}" = "true" ]; then
+            args+=(--fail-on-increase)
+          fi
+          if [ -n "${{ inputs.max-delta-tokens }}" ]; then
+            args+=(--max-delta-tokens "${{ inputs.max-delta-tokens }}")
+          fi
+          if [ -n "${{ inputs.max-tool-delta-tokens }}" ]; then
+            args+=(--max-tool-delta-tokens "${{ inputs.max-tool-delta-tokens }}")
+          fi
+        else
+          args=(scan "${{ inputs.path }}" --format md --out "${{ inputs.out }}" --github-step-summary)
+          if [ -n "${{ inputs.max-tokens }}" ]; then
+            args+=(--max-tokens "${{ inputs.max-tokens }}")
+          fi
+          if [ -n "${{ inputs.max-tool-tokens }}" ]; then
+            args+=(--max-tool-tokens "${{ inputs.max-tool-tokens }}")
+          fi
+        fi
+        set +e
+        tool-tax "${args[@]}"
+        code=$?
+        set -e
+        echo "exit-code=$code" >> "$GITHUB_OUTPUT"
+        exit 0
+    - if: ${{ inputs.comment-pr == 'true' && github.event_name == 'pull_request' }}
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+      run: tool-tax comment-pr --body-file "${{ inputs.out }}"
+    - if: ${{ steps.run-tool-tax.outputs.exit-code != '0' }}
+      shell: bash
+      run: exit "${{ steps.run-tool-tax.outputs.exit-code }}"

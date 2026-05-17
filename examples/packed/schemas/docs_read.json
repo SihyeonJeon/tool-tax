@@ -1,0 +1,1 @@
+{"properties":{"format":{"default":"markdown","enum":["markdown","text"],"type":"string"},"id":{"description":"Document ID returned by docs_search.","type":"string"}},"required":["id"],"type":"object"}

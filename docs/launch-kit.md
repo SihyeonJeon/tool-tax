@@ -19,19 +19,19 @@ tool-tax pack examples --out .tool-tax
 ```
 
 ```text
-Tools: 5
-Full tool tax: 956 est. tokens
-Slim index: 236 est. tokens
-Potential savings: 720 est. tokens (75.3%)
+Tools: 7
+Full tool tax: 1,144 est. tokens
+Slim index: 309 est. tokens
+Potential savings: 835 est. tokens (73.0%)
 ```
 
 ## Short Post
 
-I made `tool-tax`, a small dependency-free CLI for MCP and agent tool catalogs.
+I made `tool-tax`, a small CLI for MCP and agent tool catalogs.
 
-It scans JSON/OpenAPI tool definitions, estimates the up-front schema token tax,
-ranks the heaviest tools, and writes a slim `tool-index.json` so full schemas can
-be loaded later.
+It scans JSON/YAML/OpenAPI tool definitions, estimates the up-front schema token
+tax, diffs pull-request changes, and writes a slim `tool-index.json` so full
+schemas can be loaded later.
 
 Repo: https://github.com/SihyeonJeon/tool-tax
 
@@ -49,10 +49,12 @@ the context spent before the first user request: tool schemas.
 
 `tool-tax` gives that cost a number:
 
-- scan MCP-style JSON, nested tool manifests, and OpenAPI operations
+- scan MCP-style JSON/YAML, nested tool manifests, and OpenAPI operations
 - rank expensive tools
 - produce Markdown/JSON reports
+- diff base/head catalogs for pull requests
 - fail CI on catalog budget regressions
+- post/update a GitHub PR report comment when configured
 - generate a small progressive-loading index plus full schema files
 
 The first release is intentionally narrow: no runtime proxy, no billing claims,

@@ -1,0 +1,33 @@
+server: demo-agent-tools-yaml
+tools:
+  - name: docs_search
+    description: Search project docs by natural-language query.
+    inputSchema:
+      type: object
+      required:
+        - query
+      properties:
+        query:
+          type: string
+          description: Search query.
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 20
+          default: 5
+  - name: docs_read
+    description: Read one project document by stable ID.
+    inputSchema:
+      type: object
+      required:
+        - id
+      properties:
+        id:
+          type: string
+          description: Document ID returned by docs_search.
+        format:
+          type: string
+          enum:
+            - markdown
+            - text
+          default: markdown
