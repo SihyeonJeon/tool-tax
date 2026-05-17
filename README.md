@@ -7,7 +7,7 @@ files. It shows the full schema cost, ranks the heaviest tools, diffs catalog
 changes in pull requests, and writes a slim tool index for progressive loading.
 
 ```bash
-pipx install git+https://github.com/SihyeonJeon/tool-tax.git
+pipx install git+https://github.com/SihyeonJeon/tool-tax.git@v0.2.0
 
 tool-tax scan examples
 tool-tax diff old-tools.json new-tools.json
@@ -46,7 +46,7 @@ loaded up front, your agent pays a context tax before it starts working.
 From GitHub:
 
 ```bash
-pipx install git+https://github.com/SihyeonJeon/tool-tax.git
+pipx install git+https://github.com/SihyeonJeon/tool-tax.git@v0.2.0
 ```
 
 From a clone:
@@ -103,7 +103,7 @@ tool-tax diff base-tools.json head-tools.json --max-delta-tokens 500
 Use it as a GitHub Action:
 
 ```yaml
-- uses: SihyeonJeon/tool-tax@main
+- uses: SihyeonJeon/tool-tax@v0.2.0
   with:
     path: .
     max-tokens: "12000"
