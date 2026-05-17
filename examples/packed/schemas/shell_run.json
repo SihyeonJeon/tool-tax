@@ -1,0 +1,1 @@
+{"properties":{"approval_id":{"type":"string"},"cmd":{"type":"string"},"cwd":{"type":"string"},"side_effect":{"enum":["none","read_fs","write_fs","network_read","network_write","secret_access","destructive"],"type":"string"},"timeout_seconds":{"default":60,"maximum":600,"minimum":1,"type":"integer"}},"required":["cmd","cwd","side_effect"],"type":"object"}

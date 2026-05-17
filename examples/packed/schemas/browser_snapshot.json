@@ -1,0 +1,1 @@
+{"properties":{"include_bounds":{"default":true,"type":"boolean"},"include_console":{"default":true,"type":"boolean"},"include_hidden":{"default":false,"type":"boolean"},"max_nodes":{"default":1000,"maximum":5000,"minimum":10,"type":"integer"}},"type":"object"}

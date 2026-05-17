@@ -38,6 +38,7 @@ def to_json(records: list[ToolRecord], errors: list[str]) -> dict:
     summary = summarize(records)
     return {
         "summary": summary.__dict__,
+        "recommendations": recommendations(records),
         "tools": [
             {
                 "name": record.name,
@@ -47,12 +48,37 @@ def to_json(records: list[ToolRecord], errors: list[str]) -> dict:
                 "kind": record.kind,
                 "tax_tokens": record.tax_tokens,
                 "index_tokens": record.index_tokens,
+                "index_savings_tokens": max(0, record.tax_tokens - record.index_tokens),
+                "index_savings_percent": (
+                    round((record.tax_tokens - record.index_tokens) / record.tax_tokens * 100, 2)
+                    if record.tax_tokens
+                    else 0
+                ),
                 "schema_ref": record.schema_ref,
             }
             for record in sorted(records, key=lambda item: item.tax_tokens, reverse=True)
         ],
         "errors": errors,
     }
+
+
+def recommendations(records: list[ToolRecord]) -> list[str]:
+    summary = summarize(records)
+    notes: list[str] = []
+    if summary.tool_count == 0:
+        return ["No tools found. Point tool-tax at JSON tool manifests or OpenAPI files."]
+    if summary.total_tax_tokens >= 12_000:
+        notes.append("Do not always-load full schemas. Generate a slim index and lazy-load schemas.")
+    else:
+        notes.append("Current catalog is small enough, but track it in CI before it grows.")
+    if summary.worst_tool_tokens >= 750:
+        notes.append("Split or shorten the heaviest tool schema; one tool exceeds 750 estimated tokens.")
+    if summary.estimated_savings_percent >= 50:
+        notes.append("Progressive loading has high upside for this catalog.")
+    else:
+        notes.append("Slim index savings are modest; focus on response/output compression next.")
+    notes.append("Use --max-tokens and --max-tool-tokens to catch schema creep in pull requests.")
+    return notes
 
 
 def to_markdown(records: list[ToolRecord], errors: list[str]) -> str:
@@ -83,18 +109,9 @@ def to_markdown(records: list[ToolRecord], errors: list[str]) -> str:
     if errors:
         lines.extend(["", "## Read Errors", ""])
         lines.extend(f"- `{error}`" for error in errors)
-    lines.extend(
-        [
-            "",
-            "## What To Do",
-            "",
-            "- Keep the slim index in the always-loaded prompt.",
-            "- Load full schemas only after the model chooses a tool.",
-            "- Split tools whose schema alone costs more than 750 estimated tokens.",
-            "- Fail CI when full tool tax grows without a reason.",
-            "",
-        ]
-    )
+    lines.extend(["", "## What To Do", ""])
+    lines.extend(f"- {note}" for note in recommendations(records))
+    lines.append("")
     return "\n".join(lines)
 
 
@@ -130,4 +147,3 @@ def write_pack(records: list[ToolRecord], out_dir: Path) -> None:
         json.dumps({"tools": index}, ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8",
     )
-

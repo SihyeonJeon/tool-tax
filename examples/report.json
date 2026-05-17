@@ -8,6 +8,11 @@
     "worst_tool_tokens": 255,
     "grade": "lean"
   },
+  "recommendations": [
+    "Current catalog is small enough, but track it in CI before it grows.",
+    "Progressive loading has high upside for this catalog.",
+    "Use --max-tokens and --max-tool-tokens to catch schema creep in pull requests."
+  ],
   "tools": [
     {
       "name": "github_search_issues",
@@ -17,6 +22,8 @@
       "kind": "tool",
       "tax_tokens": 255,
       "index_tokens": 47,
+      "index_savings_tokens": 208,
+      "index_savings_percent": 81.57,
       "schema_ref": "schemas/github_search_issues.json"
     },
     {
@@ -27,6 +34,8 @@
       "kind": "openapi",
       "tax_tokens": 215,
       "index_tokens": 49,
+      "index_savings_tokens": 166,
+      "index_savings_percent": 77.21,
       "schema_ref": "schemas/create_run.json"
     },
     {
@@ -37,6 +46,8 @@
       "kind": "tool",
       "tax_tokens": 202,
       "index_tokens": 48,
+      "index_savings_tokens": 154,
+      "index_savings_percent": 76.24,
       "schema_ref": "schemas/shell_run.json"
     },
     {
@@ -47,6 +58,8 @@
       "kind": "tool",
       "tax_tokens": 149,
       "index_tokens": 45,
+      "index_savings_tokens": 104,
+      "index_savings_percent": 69.8,
       "schema_ref": "schemas/browser_snapshot.json"
     },
     {
@@ -57,6 +70,8 @@
       "kind": "tool",
       "tax_tokens": 135,
       "index_tokens": 47,
+      "index_savings_tokens": 88,
+      "index_savings_percent": 65.19,
       "schema_ref": "schemas/github_create_issue.json"
     }
   ],

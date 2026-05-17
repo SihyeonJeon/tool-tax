@@ -131,7 +131,15 @@ docs/           # trend scan and repo structure notes
 This tool does not compress prompts by itself. It measures the up-front schema
 tax and creates a smaller index so your agent can load full schemas later.
 
+It is the measuring tape, not the compressor.
+
+## More
+
+- [Roadmap](ROADMAP.md)
+- [Star forecast and comparison set](docs/star-forecast-2026-05-17.md)
+- [Trend scan](docs/trend-scan-2026-05-17.md)
+- [Repo shape scan](docs/repo-shape-scan.md)
+
 ## License
 
 MIT
-

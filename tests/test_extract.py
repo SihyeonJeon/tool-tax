@@ -66,9 +66,10 @@ class ExtractTests(unittest.TestCase):
         self.assertEqual(errors, [])
         self.assertEqual(summary.tool_count, 4)
         self.assertEqual(payload["summary"]["tool_count"], 4)
+        self.assertGreater(len(payload["recommendations"]), 0)
+        self.assertIn("index_savings_percent", payload["tools"][0])
         self.assertGreater(summary.estimated_savings_percent, 0)
 
 
 if __name__ == "__main__":
     unittest.main()
-

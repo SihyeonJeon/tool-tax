@@ -22,7 +22,6 @@ Grade: **lean**
 
 ## What To Do
 
-- Keep the slim index in the always-loaded prompt.
-- Load full schemas only after the model chooses a tool.
-- Split tools whose schema alone costs more than 750 estimated tokens.
-- Fail CI when full tool tax grows without a reason.
+- Current catalog is small enough, but track it in CI before it grows.
+- Progressive loading has high upside for this catalog.
+- Use --max-tokens and --max-tool-tokens to catch schema creep in pull requests.
