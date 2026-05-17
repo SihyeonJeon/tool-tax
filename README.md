@@ -156,6 +156,7 @@ progressive-disclosure gateways.
 
 - [Roadmap](ROADMAP.md)
 - [Public scan gallery](docs/scans/README.md)
+- [PyPI publish notes](docs/pypi-publish.md)
 - [Star forecast and comparison set](docs/star-forecast-2026-05-17.md)
 - [Launch kit](docs/launch-kit.md)
 - [Trend scan](docs/trend-scan-2026-05-17.md)
