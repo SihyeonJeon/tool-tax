@@ -10,6 +10,10 @@ PyPI Trusted Publishing configuration.
 - Build: `python -m build` passes.
 - Metadata: `twine check dist/*` passes.
 - Release assets: https://github.com/SihyeonJeon/tool-tax/releases/tag/v0.2.0
+- GitHub environment `pypi` exists.
+- Manual `publish-pypi` workflow run reached PyPI and failed only because no
+  matching PyPI trusted publisher exists yet:
+  https://github.com/SihyeonJeon/tool-tax/actions/runs/25991099550
 
 ## Recommended Path
 
@@ -27,6 +31,16 @@ Create a pending PyPI publisher for:
 
 After that, run the `publish-pypi` workflow manually or publish the next GitHub
 release.
+
+The failed workflow showed these OIDC claims, which should match the PyPI
+pending publisher:
+
+```text
+repository_owner: SihyeonJeon
+repository: SihyeonJeon/tool-tax
+workflow: publish-pypi.yml
+environment: pypi
+```
 
 ## Manual Token Path
 
