@@ -1,0 +1,67 @@
+{
+  "server": "demo-agent-tools",
+  "tools": [
+    {
+      "name": "github_search_issues",
+      "description": "Search GitHub issues across one repository with filters for label, state, author, assignee, updated date, and text query. Returns issue title, number, labels, timestamps, author, assignee, comments count, and URL.",
+      "inputSchema": {
+        "type": "object",
+        "required": ["repo", "query"],
+        "properties": {
+          "repo": {"type": "string", "description": "Repository in owner/name form."},
+          "query": {"type": "string", "description": "Search text or GitHub issue query fragment."},
+          "state": {"type": "string", "enum": ["open", "closed", "all"], "default": "open"},
+          "labels": {"type": "array", "items": {"type": "string"}},
+          "updated_after": {"type": "string", "format": "date-time"},
+          "limit": {"type": "integer", "minimum": 1, "maximum": 100, "default": 20}
+        }
+      }
+    },
+    {
+      "name": "github_create_issue",
+      "description": "Create a GitHub issue. This is a public write action and should only be used after review.",
+      "inputSchema": {
+        "type": "object",
+        "required": ["repo", "title", "body"],
+        "properties": {
+          "repo": {"type": "string"},
+          "title": {"type": "string", "minLength": 1},
+          "body": {"type": "string", "minLength": 1},
+          "labels": {"type": "array", "items": {"type": "string"}}
+        }
+      }
+    },
+    {
+      "name": "browser_snapshot",
+      "description": "Capture a structured browser accessibility snapshot with visible text, roles, bounding boxes, input values, clickable elements, console errors, network errors, and current URL. Use this before interacting with a live browser page.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "include_hidden": {"type": "boolean", "default": false},
+          "include_bounds": {"type": "boolean", "default": true},
+          "include_console": {"type": "boolean", "default": true},
+          "max_nodes": {"type": "integer", "minimum": 10, "maximum": 5000, "default": 1000}
+        }
+      }
+    },
+    {
+      "name": "shell_run",
+      "description": "Run a local shell command. The caller must provide the command, working directory, timeout, and side-effect classification. Commands that mutate files, install dependencies, access secrets, use the network, or delete data require explicit approval.",
+      "inputSchema": {
+        "type": "object",
+        "required": ["cmd", "cwd", "side_effect"],
+        "properties": {
+          "cmd": {"type": "string"},
+          "cwd": {"type": "string"},
+          "timeout_seconds": {"type": "integer", "minimum": 1, "maximum": 600, "default": 60},
+          "side_effect": {
+            "type": "string",
+            "enum": ["none", "read_fs", "write_fs", "network_read", "network_write", "secret_access", "destructive"]
+          },
+          "approval_id": {"type": "string"}
+        }
+      }
+    }
+  ]
+}
+

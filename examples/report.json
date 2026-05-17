@@ -1,0 +1,64 @@
+{
+  "summary": {
+    "tool_count": 5,
+    "total_tax_tokens": 956,
+    "total_index_tokens": 236,
+    "estimated_savings_tokens": 720,
+    "estimated_savings_percent": 75.31380753138075,
+    "worst_tool_tokens": 255,
+    "grade": "lean"
+  },
+  "tools": [
+    {
+      "name": "github_search_issues",
+      "description": "Search GitHub issues across one repository with filters for label, state, author, assignee, updated date, and text query. Returns issue title, number, labels, timestamps, author, assignee, comments count, and URL.",
+      "source_path": "examples/mcp-tools.json",
+      "pointer": "/tools/0",
+      "kind": "tool",
+      "tax_tokens": 255,
+      "index_tokens": 47,
+      "schema_ref": "schemas/github_search_issues.json"
+    },
+    {
+      "name": "create_run",
+      "description": "Create a benchmark run with provider, model, prompt variant, task id, raw response, token usage, latency, parse verdict, and score.",
+      "source_path": "examples/openapi.json",
+      "pointer": "/paths//runs/post",
+      "kind": "openapi",
+      "tax_tokens": 215,
+      "index_tokens": 49,
+      "schema_ref": "schemas/create_run.json"
+    },
+    {
+      "name": "shell_run",
+      "description": "Run a local shell command. The caller must provide the command, working directory, timeout, and side-effect classification. Commands that mutate files, install dependencies, access secrets, use the network, or delete data require explicit approval.",
+      "source_path": "examples/mcp-tools.json",
+      "pointer": "/tools/3",
+      "kind": "tool",
+      "tax_tokens": 202,
+      "index_tokens": 48,
+      "schema_ref": "schemas/shell_run.json"
+    },
+    {
+      "name": "browser_snapshot",
+      "description": "Capture a structured browser accessibility snapshot with visible text, roles, bounding boxes, input values, clickable elements, console errors, network errors, and current URL. Use this before interacting with a live browser page.",
+      "source_path": "examples/mcp-tools.json",
+      "pointer": "/tools/2",
+      "kind": "tool",
+      "tax_tokens": 149,
+      "index_tokens": 45,
+      "schema_ref": "schemas/browser_snapshot.json"
+    },
+    {
+      "name": "github_create_issue",
+      "description": "Create a GitHub issue. This is a public write action and should only be used after review.",
+      "source_path": "examples/mcp-tools.json",
+      "pointer": "/tools/1",
+      "kind": "tool",
+      "tax_tokens": 135,
+      "index_tokens": 47,
+      "schema_ref": "schemas/github_create_issue.json"
+    }
+  ],
+  "errors": []
+}

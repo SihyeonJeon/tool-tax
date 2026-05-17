@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tool-tax"
+version = "0.1.0"
+description = "Measure the hidden token bill of MCP and agent tool catalogs."
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+authors = [{name = "Sihyeon Jeon"}]
+keywords = ["mcp", "agents", "tool-calling", "context-engineering", "token-budget"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: MIT License",
+  "Environment :: Console",
+  "Topic :: Software Development :: Quality Assurance",
+]
+
+[project.scripts]
+tool-tax = "tool_tax.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
