@@ -1,0 +1,32 @@
+name: Bug report
+description: Report a reproducible tool-tax failure.
+title: "bug: "
+labels: ["bug"]
+body:
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: Include the command, input shape, and observed output.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected result
+    validations:
+      required: true
+  - type: textarea
+    id: fixture
+    attributes:
+      label: Minimal fixture
+      description: Paste a small JSON/OpenAPI sample if possible.
+      render: json
+    validations:
+      required: false
+  - type: input
+    id: version
+    attributes:
+      label: tool-tax version or commit
+    validations:
+      required: false

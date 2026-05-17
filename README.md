@@ -137,6 +137,7 @@ It is the measuring tape, not the compressor.
 
 - [Roadmap](ROADMAP.md)
 - [Star forecast and comparison set](docs/star-forecast-2026-05-17.md)
+- [Launch kit](docs/launch-kit.md)
 - [Trend scan](docs/trend-scan-2026-05-17.md)
 - [Repo shape scan](docs/repo-shape-scan.md)
 
