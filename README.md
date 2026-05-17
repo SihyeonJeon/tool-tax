@@ -2,7 +2,7 @@
 
 **See how many tokens your agent tools burn before the user even asks a question.**
 
-`tool-tax` scans MCP-style tool catalogs, JSON tool manifests, and OpenAPI files.
+`tool-tax` scans MCP-style tool catalogs, JSON/YAML tool manifests, and OpenAPI files.
 It shows the full schema cost, ranks the heaviest tools, and writes a slim
 tool index for progressive loading.
 
@@ -32,7 +32,7 @@ loaded up front, your agent pays a context tax before it starts working.
 
 ## What It Does
 
-- Finds tool definitions in JSON and OpenAPI files.
+- Finds tool definitions in JSON, YAML, and OpenAPI files.
 - Estimates token cost for each tool schema.
 - Ranks the most expensive tools.
 - Generates a slim `tool-index.json` plus separate schema files.
@@ -109,13 +109,12 @@ Grade: **lean**
 
 ## Supports
 
-- MCP-style JSON tool arrays
+- MCP-style JSON and YAML tool arrays
 - Agent tool manifests with `name`, `description`, and `inputSchema`
 - OpenAPI `paths` operations
 - Nested JSON catalogs
 
-YAML support is intentionally not bundled yet; the first release is
-dependency-free and JSON-first.
+YAML support covers common dependency-free MCP-style mappings and lists.
 
 ## Repo Shape
 

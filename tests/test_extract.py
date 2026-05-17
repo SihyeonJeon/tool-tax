@@ -59,6 +59,38 @@ class ExtractTests(unittest.TestCase):
         self.assertEqual(records[0].kind, "openapi")
         self.assertEqual(records[0].name, "create_item")
 
+    def test_extracts_mcp_style_yaml(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+
+            def write_catalog(path: Path, name: str) -> None:
+                path.write_text(
+                    f"""
+tools:
+  - name: {name}
+    description: >
+      Search project
+      documentation
+    inputSchema:
+      type: object
+      properties:
+        query:
+          type: string
+      required:
+        - query
+""".lstrip(),
+                    encoding="utf-8",
+                )
+
+            write_catalog(root / "mcp-server.yaml", "search_docs")
+            write_catalog(root / "mcp-server.yml", "lookup_docs")
+            records, errors = extract_tools([root])
+        self.assertEqual(errors, [])
+        self.assertEqual({record.name for record in records}, {"lookup_docs", "search_docs"})
+        schema = next(record.schema for record in records if record.name == "search_docs")
+        self.assertEqual(schema["properties"]["query"]["type"], "string")
+        self.assertEqual(schema["required"], ["query"])
+
     def test_summary_and_json_report(self) -> None:
         records, errors = extract_tools([Path("examples/mcp-tools.json")])
         summary = summarize(records)

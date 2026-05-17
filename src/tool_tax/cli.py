@@ -53,7 +53,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--version", action="version", version=f"tool-tax {__version__}")
     sub = parser.add_subparsers(dest="command", required=True)
 
-    scan = sub.add_parser("scan", help="scan JSON/OpenAPI/tool catalogs")
+    scan = sub.add_parser("scan", help="scan JSON/YAML/OpenAPI/tool catalogs")
     scan.add_argument("paths", nargs="+", help="files or directories to scan")
     scan.add_argument("--format", choices=["md", "json"], default="md")
     scan.add_argument("--out", help="write report to file")

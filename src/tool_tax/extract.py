@@ -18,6 +18,8 @@ SCHEMA_KEYS = {
 }
 
 METHODS = {"get", "put", "post", "delete", "patch", "options", "head"}
+YAML_SUFFIXES = {".yaml", ".yml"}
+DOCUMENT_SUFFIXES = {".json", *YAML_SUFFIXES}
 
 
 def compact_json(value: Any) -> str:
@@ -145,13 +147,214 @@ def load_json(path: Path) -> Any:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def strip_yaml_comment(line: str) -> str:
+    in_single = False
+    in_double = False
+    for index, char in enumerate(line):
+        if char == "'" and not in_double:
+            in_single = not in_single
+        elif char == '"' and not in_single:
+            in_double = not in_double
+        elif char == "#" and not in_single and not in_double:
+            return line[:index]
+    return line
+
+
+def yaml_lines(source: str) -> list[tuple[int, str]]:
+    lines: list[tuple[int, str]] = []
+    for line in source.splitlines():
+        if "\t" in line:
+            raise ValueError("tabs are not supported in YAML indentation")
+        cleaned = strip_yaml_comment(line).rstrip()
+        if not cleaned.strip():
+            continue
+        lines.append((len(cleaned) - len(cleaned.lstrip(" ")), cleaned.lstrip(" ")))
+    return lines
+
+
+def parse_yaml_scalar(value: str) -> Any:
+    value = value.strip()
+    if value == "":
+        return ""
+    if value in {"null", "Null", "NULL", "~"}:
+        return None
+    if value in {"true", "True", "TRUE"}:
+        return True
+    if value in {"false", "False", "FALSE"}:
+        return False
+    if (
+        (value.startswith('"') and value.endswith('"'))
+        or (value.startswith("'") and value.endswith("'"))
+    ):
+        return value[1:-1]
+    if value.startswith("[") and value.endswith("]"):
+        inner = value[1:-1].strip()
+        if not inner:
+            return []
+        return [parse_yaml_scalar(part.strip()) for part in inner.split(",")]
+    if value.startswith("{") and value.endswith("}"):
+        try:
+            return json.loads(value)
+        except json.JSONDecodeError:
+            return value
+    try:
+        return int(value)
+    except ValueError:
+        pass
+    try:
+        return float(value)
+    except ValueError:
+        return value
+
+
+def yaml_mapping_separator_index(text: str) -> int:
+    in_single = False
+    in_double = False
+    for index, char in enumerate(text):
+        if char == "'" and not in_double:
+            in_single = not in_single
+        elif char == '"' and not in_single:
+            in_double = not in_double
+        elif char == ":" and not in_single and not in_double:
+            if index == len(text) - 1 or text[index + 1].isspace():
+                return index
+    return -1
+
+
+def split_yaml_mapping_entry(text: str) -> tuple[str, str]:
+    separator = yaml_mapping_separator_index(text)
+    if separator < 0:
+        raise ValueError(f"expected mapping entry, got {text!r}")
+    key = text[:separator]
+    value = text[separator + 1 :]
+    key = key.strip()
+    if not key:
+        raise ValueError(f"empty mapping key in {text!r}")
+    return key, value.strip()
+
+
+def parse_yaml_block(lines: list[tuple[int, str]], index: int, indent: int) -> tuple[Any, int]:
+    if index >= len(lines):
+        return {}, index
+    current_indent, text = lines[index]
+    if current_indent < indent:
+        return {}, index
+    if text.startswith("- "):
+        return parse_yaml_sequence(lines, index, current_indent)
+    return parse_yaml_mapping(lines, index, current_indent)
+
+
+def parse_yaml_block_scalar(
+    lines: list[tuple[int, str]], index: int, indent: int, folded: bool
+) -> tuple[str, int]:
+    values: list[str] = []
+    while index < len(lines):
+        current_indent, text = lines[index]
+        if current_indent < indent:
+            break
+        values.append(text)
+        index += 1
+    if folded:
+        return " ".join(values), index
+    return "\n".join(values), index
+
+
+def parse_yaml_mapping(lines: list[tuple[int, str]], index: int, indent: int) -> tuple[dict[str, Any], int]:
+    result: dict[str, Any] = {}
+    while index < len(lines):
+        current_indent, text = lines[index]
+        if current_indent < indent:
+            break
+        if current_indent > indent:
+            raise ValueError(f"unexpected indentation before {text!r}")
+        if text.startswith("- "):
+            break
+        key, value_text = split_yaml_mapping_entry(text)
+        index += 1
+        if value_text in {"|", ">"}:
+            if index < len(lines) and lines[index][0] > indent:
+                result[key], index = parse_yaml_block_scalar(
+                    lines, index, lines[index][0], value_text == ">"
+                )
+            else:
+                result[key] = ""
+            continue
+        if value_text:
+            result[key] = parse_yaml_scalar(value_text)
+            continue
+        if index < len(lines) and lines[index][0] > indent:
+            result[key], index = parse_yaml_block(lines, index, lines[index][0])
+        else:
+            result[key] = {}
+    return result, index
+
+
+def parse_yaml_sequence(lines: list[tuple[int, str]], index: int, indent: int) -> tuple[list[Any], int]:
+    result: list[Any] = []
+    while index < len(lines):
+        current_indent, text = lines[index]
+        if current_indent < indent:
+            break
+        if current_indent > indent:
+            raise ValueError(f"unexpected indentation before {text!r}")
+        if not text.startswith("- "):
+            break
+        item_text = text[2:].strip()
+        index += 1
+        if not item_text:
+            if index < len(lines) and lines[index][0] > indent:
+                item, index = parse_yaml_block(lines, index, lines[index][0])
+            else:
+                item = None
+            result.append(item)
+            continue
+        if yaml_mapping_separator_index(item_text) >= 0:
+            key, value_text = split_yaml_mapping_entry(item_text)
+            item_map: dict[str, Any] = {
+                key: parse_yaml_scalar(value_text) if value_text else {}
+            }
+            if index < len(lines) and lines[index][0] > indent:
+                nested, index = parse_yaml_mapping(lines, index, lines[index][0])
+                item_map.update(nested)
+            result.append(item_map)
+        else:
+            result.append(parse_yaml_scalar(item_text))
+    return result, index
+
+
+def load_yaml(path: Path) -> Any:
+    lines = yaml_lines(path.read_text(encoding="utf-8"))
+    if not lines:
+        return {}
+    data, index = parse_yaml_block(lines, 0, lines[0][0])
+    if index != len(lines):
+        raise ValueError(f"could not parse YAML near {lines[index][1]!r}")
+    return data
+
+
+def load_document(path: Path) -> Any:
+    if path.suffix.lower() in YAML_SUFFIXES:
+        return load_yaml(path)
+    return load_json(path)
+
+
 def candidate_files(paths: list[Path]) -> list[Path]:
     files: list[Path] = []
     for path in paths:
-        if path.is_file() and path.suffix.lower() == ".json":
+        if path.is_file() and path.suffix.lower() in DOCUMENT_SUFFIXES:
             files.append(path)
         elif path.is_dir():
-            files.extend(sorted(p for p in path.rglob("*.json") if ".git" not in p.parts))
+            files.extend(
+                sorted(
+                    p
+                    for p in path.rglob("*")
+                    if (
+                        p.is_file()
+                        and p.suffix.lower() in DOCUMENT_SUFFIXES
+                        and ".git" not in p.parts
+                    )
+                )
+            )
     return sorted(set(files))
 
 
@@ -160,7 +363,7 @@ def extract_tools(paths: list[Path]) -> tuple[list[ToolRecord], list[str]]:
     errors: list[str] = []
     for path in candidate_files(paths):
         try:
-            data = load_json(path)
+            data = load_document(path)
         except Exception as exc:  # noqa: BLE001
             errors.append(f"{path}: {exc}")
             continue
