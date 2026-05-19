@@ -10,6 +10,7 @@ from . import __version__
 from .diff import dump_diff_json, to_diff_json, to_diff_markdown
 from .extract import ExtractOptions, extract_tools
 from .github_comment import DEFAULT_MARKER, resolve_pr_number, upsert_pr_comment
+from .mcp_stdio import list_mcp_stdio_tools
 from .report import summarize, to_json, to_markdown, write_pack, write_report
 
 
@@ -55,6 +56,38 @@ def cmd_scan(args: argparse.Namespace) -> int:
     if args.fail_on_grade:
         ranks = {"lean": 0, "warm": 1, "expensive": 2, "brutal": 3}
         failed = ranks[summary.grade] >= ranks[args.fail_on_grade]
+    return 2 if failed else 0
+
+
+def budget_failed(args: argparse.Namespace, total_tokens: int, worst_tool_tokens: int, grade: str) -> bool:
+    if args.max_tokens is not None and total_tokens > args.max_tokens:
+        return True
+    if args.max_tool_tokens is not None and worst_tool_tokens > args.max_tool_tokens:
+        return True
+    if getattr(args, "fail_on_grade", None):
+        ranks = {"lean": 0, "warm": 1, "expensive": 2, "brutal": 3}
+        return ranks[grade] >= ranks[args.fail_on_grade]
+    return False
+
+
+def cmd_mcp(args: argparse.Namespace) -> int:
+    command = list(args.command)
+    if command and command[0] == "--":
+        command = command[1:]
+    if not command:
+        print("ERROR: missing MCP server command after --", file=sys.stderr)
+        return 1
+    records, errors = list_mcp_stdio_tools(command, timeout=args.timeout, protocol_version=args.protocol_version)
+    payload = to_json(records, errors) if args.format == "json" else to_markdown(records, errors)
+    write_report(payload, Path(args.out).resolve() if args.out else None)
+    if args.github_step_summary:
+        append_step_summary(to_markdown(records, errors))
+    if args.pack_out:
+        write_pack(records, Path(args.pack_out).resolve())
+    summary = summarize(records)
+    if errors and not records:
+        return 1
+    failed = budget_failed(args, summary.total_tax_tokens, summary.worst_tool_tokens, summary.grade)
     return 2 if failed else 0
 
 
@@ -139,6 +172,19 @@ def build_parser() -> argparse.ArgumentParser:
     scan.add_argument("--github-step-summary", action="store_true", help="append Markdown report to GitHub step summary")
     add_openapi_slice_options(scan)
     scan.set_defaults(func=cmd_scan)
+
+    mcp = sub.add_parser("mcp", help="scan a live MCP stdio server")
+    mcp.add_argument("--format", choices=["md", "json"], default="md")
+    mcp.add_argument("--out", help="write report to file")
+    mcp.add_argument("--pack-out", help="write slim index and schema files from live MCP tools")
+    mcp.add_argument("--timeout", type=float, default=10.0, help="seconds to wait for initialize/tools responses")
+    mcp.add_argument("--protocol-version", default="2025-06-18", help="MCP protocol version sent at initialize")
+    mcp.add_argument("--max-tokens", type=int, help="fail if total tool tax is above this")
+    mcp.add_argument("--max-tool-tokens", type=int, help="fail if any one tool is above this")
+    mcp.add_argument("--fail-on-grade", choices=["lean", "warm", "expensive", "brutal"])
+    mcp.add_argument("--github-step-summary", action="store_true", help="append Markdown report to GitHub step summary")
+    mcp.add_argument("command", nargs=argparse.REMAINDER, help="MCP server command after --")
+    mcp.set_defaults(func=cmd_mcp)
 
     diff = sub.add_parser("diff", help="compare base and head tool catalogs")
     diff.add_argument("base", help="base file or directory")

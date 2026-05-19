@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import sys
 import tempfile
 import unittest
 from contextlib import redirect_stdout
@@ -109,6 +110,30 @@ class CliTests(unittest.TestCase):
             payload = json.loads(out.read_text(encoding="utf-8"))
             self.assertEqual(payload["summary"]["tool_count"], 1)
             self.assertEqual(payload["tools"][0]["name"], "create_run")
+
+    def test_mcp_stdio_json_output_and_pack(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            out = Path(td) / "mcp.json"
+            pack_out = Path(td) / "pack"
+            code = main(
+                [
+                    "mcp",
+                    "--format",
+                    "json",
+                    "--out",
+                    str(out),
+                    "--pack-out",
+                    str(pack_out),
+                    "--",
+                    sys.executable,
+                    "tests/fixtures/mcp_stdio_server.py",
+                ]
+            )
+            self.assertEqual(code, 0)
+            payload = json.loads(out.read_text(encoding="utf-8"))
+            self.assertEqual(payload["summary"]["tool_count"], 2)
+            self.assertEqual(payload["tools"][0]["kind"], "mcp")
+            self.assertTrue((pack_out / "tool-index.json").exists())
 
 
 if __name__ == "__main__":

@@ -1,10 +1,14 @@
 # Public Scan Gallery
 
-These reports scan large public OpenAPI catalogs without vendoring the source
-files into this repository.
+These reports scan live MCP stdio servers and large public OpenAPI catalogs
+without vendoring third-party source files into this repository.
 
 | Catalog | Source | Tools | Full tool tax | Slim index | Potential savings |
 | --- | --- | ---: | ---: | ---: | ---: |
+| MCP Filesystem stdio | https://www.npmjs.com/package/@modelcontextprotocol/server-filesystem | 14 | 2,102 | 647 | 69.2% |
+| MCP Memory stdio | https://www.npmjs.com/package/@modelcontextprotocol/server-memory | 9 | 1,324 | 340 | 74.3% |
+| MCP Sequential Thinking stdio | https://www.npmjs.com/package/@modelcontextprotocol/server-sequential-thinking | 1 | 858 | 46 | 94.6% |
+| MCP Everything stdio | https://www.npmjs.com/package/@modelcontextprotocol/server-everything | 13 | 1,499 | 598 | 60.1% |
 | GitHub REST API | https://github.com/github/rest-api-description | 1,184 | 366,962 | 70,996 | 80.7% |
 | GitHub REST API `/repos/` slice | https://github.com/github/rest-api-description | 492 | 168,391 | 28,446 | 83.1% |
 | Stripe OpenAPI | https://github.com/stripe/openapi | 587 | 649,797 | 28,047 | 95.7% |
@@ -14,6 +18,22 @@ files into this repository.
 
 ```bash
 mkdir -p /tmp/tool-tax-public-scans
+
+tool-tax mcp \
+  --out docs/scans/mcp-filesystem-stdio.md \
+  -- npx -y @modelcontextprotocol/server-filesystem /tmp
+
+tool-tax mcp \
+  --out docs/scans/mcp-memory-stdio.md \
+  -- npx -y @modelcontextprotocol/server-memory
+
+tool-tax mcp \
+  --out docs/scans/mcp-sequential-thinking-stdio.md \
+  -- npx -y @modelcontextprotocol/server-sequential-thinking
+
+tool-tax mcp \
+  --out docs/scans/mcp-everything-stdio.md \
+  -- npx -y @modelcontextprotocol/server-everything
 
 curl -L https://raw.githubusercontent.com/github/rest-api-description/main/descriptions/api.github.com/api.github.com.json \
   -o /tmp/tool-tax-public-scans/github-rest-api.json

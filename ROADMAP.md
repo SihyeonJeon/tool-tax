@@ -2,7 +2,7 @@
 
 ## Next
 
-- More public MCP-native scan fixtures, beyond OpenAPI catalogs.
+- Short terminal demo GIF/asciinema.
 
 ## Later
 
@@ -18,6 +18,8 @@
 - PyPI release workflow and publish notes.
 - PyPI release: [#2](https://github.com/SihyeonJeon/tool-tax/issues/2)
 - OpenAPI slicing by tag, path, or operation group.
+- Live MCP stdio probing through `initialize` and `tools/list`.
+- Public MCP-native scan reports beyond OpenAPI catalogs.
 
 ## Not Now
 

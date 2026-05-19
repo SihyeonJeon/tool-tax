@@ -40,7 +40,8 @@ High-star repos in this category usually have at least one of:
 - PyPI package available;
 - no demo video;
 - GitHub Action integration;
-- package-manager distribution through PyPI.
+- package-manager distribution through PyPI;
+- live MCP stdio probing with public MCP scan reports.
 
 ## Appropriate Star Range
 
@@ -53,8 +54,8 @@ After sharing in targeted MCP/Claude/Codex communities with a short demo:
 
 - first 30 days: 40-120 stars.
 
-With YAML support, `tool-tax diff`, a GitHub Action comment path, and scans of
-large public catalogs:
+With YAML support, `tool-tax diff`, a GitHub Action comment path, live MCP
+stdio probing, and scans of large public catalogs:
 
 - realistic 60-90 day range: 100-300 stars.
 
@@ -65,7 +66,7 @@ large public catalogs:
 - a bigger runtime surface such as an MCP proxy/router;
 - adoption or mention from a known agent-tool creator.
 
-## Work To Do Now
+## Completed Since Forecast
 
 - Keep README short and effect-first.
 - Add a forecast and comparison doc so claims are grounded.
@@ -73,10 +74,11 @@ large public catalogs:
 - Commit generated progressive-loading pack so users can inspect output without
   running the tool.
 - Add JSON recommendations for machine-readable CI/report consumers.
+- Add live MCP stdio scan reports so the repo is not only OpenAPI-based.
 
-## Work To Do Next
+## Work To Do Now
 
-- Add MCP-native scan reports beyond OpenAPI catalogs.
-- Add OpenAPI slicing by tag/path.
+- Add a short terminal demo GIF/asciinema.
+- Add optional exact tokenizers for provider-specific estimates.
 - Explore a runtime MCP proxy/router only if it can beat existing SOTA tools in
   a narrow workflow.

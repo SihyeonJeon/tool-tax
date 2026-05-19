@@ -15,6 +15,7 @@ smaller progressive-loading index.
 ```bash
 pipx install tool-tax
 tool-tax scan examples
+tool-tax mcp -- npx -y @modelcontextprotocol/server-filesystem /tmp
 tool-tax pack examples --out .tool-tax
 ```
 
@@ -29,9 +30,9 @@ Potential savings: 835 est. tokens (73.0%)
 
 I made `tool-tax`, a small CLI for MCP and agent tool catalogs.
 
-It scans JSON/YAML/OpenAPI tool definitions, estimates the up-front schema token
-tax, diffs pull-request changes, and writes a slim `tool-index.json` so full
-schemas can be loaded later.
+It scans JSON/YAML/OpenAPI tool definitions, can probe live MCP stdio servers,
+estimates the up-front schema token tax, diffs pull-request changes, and writes
+a slim `tool-index.json` so full schemas can be loaded later.
 
 Repo: https://github.com/SihyeonJeon/tool-tax
 
@@ -50,6 +51,7 @@ the context spent before the first user request: tool schemas.
 `tool-tax` gives that cost a number:
 
 - scan MCP-style JSON/YAML, nested tool manifests, and OpenAPI operations
+- probe live MCP stdio servers with `initialize` + `tools/list`
 - rank expensive tools
 - produce Markdown/JSON reports
 - diff base/head catalogs for pull requests
@@ -59,6 +61,13 @@ the context spent before the first user request: tool schemas.
 
 The first release is intentionally narrow: no runtime proxy, no billing claims,
 and no prompt-compression claims. It is a measuring tool.
+
+Measured examples:
+
+- MCP Filesystem: 2,102 -> 647 est. tokens, 69.2% smaller
+- MCP Memory: 1,324 -> 340 est. tokens, 74.3% smaller
+- MCP Sequential Thinking: 858 -> 46 est. tokens, 94.6% smaller
+- GitHub REST API: 366,962 -> 70,996 est. tokens, 80.7% smaller
 
 ## Where To Share Manually
 
