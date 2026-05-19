@@ -50,3 +50,22 @@ for raw in sys.stdin:
         )
     elif method == "tools/list":
         write({"jsonrpc": "2.0", "id": message["id"], "result": {"tools": TOOLS}})
+    elif method == "tools/call":
+        params = message.get("params", {})
+        name = params.get("name")
+        arguments = params.get("arguments", {})
+        write(
+            {
+                "jsonrpc": "2.0",
+                "id": message["id"],
+                "result": {
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": json.dumps({"called": name, "arguments": arguments}, sort_keys=True),
+                        }
+                    ],
+                    "structuredContent": {"called": name, "arguments": arguments},
+                },
+            }
+        )

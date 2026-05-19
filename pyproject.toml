@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "tool-tax"
-version = "0.4.0"
+version = "0.5.0"
 description = "Measure the hidden token bill of MCP and agent tool catalogs."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -20,6 +20,7 @@ classifiers = [
 
 [project.scripts]
 tool-tax = "tool_tax.cli:main"
+tool-tax-proxy = "tool_tax.mcp_proxy:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

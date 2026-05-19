@@ -33,8 +33,9 @@ Potential savings: 835 est. tokens (73.0%)
 I made `tool-tax`, a small CLI for MCP and agent tool catalogs.
 
 It scans JSON/YAML/OpenAPI tool definitions, can probe live MCP stdio servers,
-estimates the up-front schema token tax, diffs pull-request changes, and writes
-a slim `tool-index.json` so full schemas can be loaded later.
+estimates the up-front schema token tax, diffs pull-request changes, writes a
+slim `tool-index.json`, and includes an experimental stdio proxy for lazy
+schema loading.
 
 Repo: https://github.com/SihyeonJeon/tool-tax
 
@@ -60,13 +61,15 @@ the context spent before the first user request: tool schemas.
 - fail CI on catalog budget regressions
 - post/update a GitHub PR report comment when configured
 - generate a small progressive-loading index plus full schema files
+- run a stdio proxy that exposes only three wrapper tools up front
 
-The first release is intentionally narrow: no runtime proxy, no billing claims,
-and no prompt-compression claims. It is a measuring tool.
+The proxy is intentionally narrow: stdio only, `tools/list`, and `tools/call`.
+No billing claims and no prompt-compression claims.
 
 Measured examples:
 
 - MCP Filesystem: 2,102 -> 647 est. tokens, 69.2% smaller
+- MCP Filesystem through proxy: 2,102 -> 260 est. upfront tokens, 87.6% smaller
 - MCP Memory: 1,324 -> 340 est. tokens, 74.3% smaller
 - MCP Sequential Thinking: 858 -> 46 est. tokens, 94.6% smaller
 - GitHub REST API: 366,962 -> 70,996 est. tokens, 80.7% smaller

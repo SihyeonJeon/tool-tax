@@ -11,6 +11,7 @@ from .diff import dump_diff_json, to_diff_json, to_diff_markdown
 from .extract import ExtractOptions, extract_tools
 from .github_comment import DEFAULT_MARKER, resolve_pr_number, upsert_pr_comment
 from .mcp_stdio import list_mcp_stdio_tools
+from .mcp_proxy import ToolTaxProxy
 from .report import summarize, to_json, to_markdown, write_pack, write_report
 
 
@@ -89,6 +90,16 @@ def cmd_mcp(args: argparse.Namespace) -> int:
         return 1
     failed = budget_failed(args, summary.total_tax_tokens, summary.worst_tool_tokens, summary.grade)
     return 2 if failed else 0
+
+
+def cmd_proxy(args: argparse.Namespace) -> int:
+    command = list(args.command)
+    if command and command[0] == "--":
+        command = command[1:]
+    if not command:
+        print("ERROR: missing upstream MCP server command after --", file=sys.stderr)
+        return 1
+    return ToolTaxProxy(command, args.timeout, args.protocol_version).serve()
 
 
 def cmd_diff(args: argparse.Namespace) -> int:
@@ -185,6 +196,12 @@ def build_parser() -> argparse.ArgumentParser:
     mcp.add_argument("--github-step-summary", action="store_true", help="append Markdown report to GitHub step summary")
     mcp.add_argument("command", nargs=argparse.REMAINDER, help="MCP server command after --")
     mcp.set_defaults(func=cmd_mcp)
+
+    proxy = sub.add_parser("proxy", help="run a slim-index MCP stdio proxy")
+    proxy.add_argument("--timeout", type=float, default=10.0, help="seconds to wait for upstream MCP responses")
+    proxy.add_argument("--protocol-version", default="2025-06-18", help="MCP protocol version sent upstream")
+    proxy.add_argument("command", nargs=argparse.REMAINDER, help="upstream MCP server command after --")
+    proxy.set_defaults(func=cmd_proxy)
 
     diff = sub.add_parser("diff", help="compare base and head tool catalogs")
     diff.add_argument("base", help="base file or directory")

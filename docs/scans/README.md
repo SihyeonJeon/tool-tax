@@ -6,8 +6,10 @@ without vendoring third-party source files into this repository.
 | Catalog | Source | Tools | Full tool tax | Slim index | Potential savings |
 | --- | --- | ---: | ---: | ---: | ---: |
 | MCP Filesystem stdio | https://www.npmjs.com/package/@modelcontextprotocol/server-filesystem | 14 | 2,102 | 647 | 69.2% |
+| MCP Filesystem through `tool-tax proxy` | https://www.npmjs.com/package/@modelcontextprotocol/server-filesystem | 3 | 260 | 136 | 47.7% |
 | MCP Memory stdio | https://www.npmjs.com/package/@modelcontextprotocol/server-memory | 9 | 1,324 | 340 | 74.3% |
 | MCP Sequential Thinking stdio | https://www.npmjs.com/package/@modelcontextprotocol/server-sequential-thinking | 1 | 858 | 46 | 94.6% |
+| MCP Sequential Thinking through `tool-tax proxy` | https://www.npmjs.com/package/@modelcontextprotocol/server-sequential-thinking | 3 | 260 | 136 | 47.7% |
 | MCP Everything stdio | https://www.npmjs.com/package/@modelcontextprotocol/server-everything | 13 | 1,499 | 598 | 60.1% |
 | GitHub REST API | https://github.com/github/rest-api-description | 1,184 | 366,962 | 70,996 | 80.7% |
 | GitHub REST API `/repos/` slice | https://github.com/github/rest-api-description | 492 | 168,391 | 28,446 | 83.1% |
@@ -24,12 +26,20 @@ tool-tax mcp \
   -- npx -y @modelcontextprotocol/server-filesystem /tmp
 
 tool-tax mcp \
+  --out docs/scans/mcp-filesystem-proxy.md \
+  -- tool-tax proxy -- npx -y @modelcontextprotocol/server-filesystem /tmp
+
+tool-tax mcp \
   --out docs/scans/mcp-memory-stdio.md \
   -- npx -y @modelcontextprotocol/server-memory
 
 tool-tax mcp \
   --out docs/scans/mcp-sequential-thinking-stdio.md \
   -- npx -y @modelcontextprotocol/server-sequential-thinking
+
+tool-tax mcp \
+  --out docs/scans/mcp-sequential-thinking-proxy.md \
+  -- tool-tax proxy -- npx -y @modelcontextprotocol/server-sequential-thinking
 
 tool-tax mcp \
   --out docs/scans/mcp-everything-stdio.md \

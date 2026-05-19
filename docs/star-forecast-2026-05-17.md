@@ -42,6 +42,7 @@ High-star repos in this category usually have at least one of:
 - GitHub Action integration;
 - package-manager distribution through PyPI;
 - live MCP stdio probing with public MCP scan reports.
+- experimental runtime MCP stdio proxy with lazy schema loading.
 
 ## Appropriate Star Range
 
@@ -55,15 +56,17 @@ After sharing in targeted MCP/Claude/Codex communities with a short demo:
 - first 30 days: 40-120 stars.
 
 With YAML support, `tool-tax diff`, a GitHub Action comment path, live MCP
-stdio probing, and scans of large public catalogs:
+stdio probing, scans of large public catalogs, and a narrow runtime proxy:
 
-- realistic 60-90 day range: 100-300 stars.
+- realistic 60-90 day range: 150-400 stars if a launch reaches the MCP/agent
+  tooling audience.
 
 500+ stars likely requires either:
 
 - a widely shared post or HN/Reddit pickup;
 - package-manager release and easy one-line CI adoption;
-- a bigger runtime surface such as an MCP proxy/router;
+- a broader runtime surface such as streamable HTTP, auth, or trace-aware
+  routing;
 - adoption or mention from a known agent-tool creator.
 
 ## Completed Since Forecast
@@ -76,9 +79,11 @@ stdio probing, and scans of large public catalogs:
 - Add JSON recommendations for machine-readable CI/report consumers.
 - Add live MCP stdio scan reports so the repo is not only OpenAPI-based.
 - Add a short terminal demo GIF.
+- Add a narrow runtime MCP stdio proxy and benchmark its upfront schema tax.
 
 ## Work To Do Now
 
+- Benchmark the proxy on more real MCP servers.
 - Add optional exact tokenizers for provider-specific estimates.
-- Explore a runtime MCP proxy/router only if it can beat existing SOTA tools in
-  a narrow workflow.
+- Decide whether to expand the proxy beyond stdio only if it can beat existing
+  SOTA tools in a narrow workflow.

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -134,6 +135,85 @@ class CliTests(unittest.TestCase):
             self.assertEqual(payload["summary"]["tool_count"], 2)
             self.assertEqual(payload["tools"][0]["kind"], "mcp")
             self.assertTrue((pack_out / "tool-index.json").exists())
+
+    def test_mcp_proxy_exposes_three_lazy_tools(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            out = Path(td) / "proxy.json"
+            code = main(
+                [
+                    "mcp",
+                    "--format",
+                    "json",
+                    "--out",
+                    str(out),
+                    "--",
+                    sys.executable,
+                    "-m",
+                    "tool_tax.mcp_proxy",
+                    "--",
+                    sys.executable,
+                    "tests/fixtures/mcp_stdio_server.py",
+                ]
+            )
+            self.assertEqual(code, 0)
+            payload = json.loads(out.read_text(encoding="utf-8"))
+            self.assertEqual(payload["summary"]["tool_count"], 3)
+            self.assertEqual(
+                {tool["name"] for tool in payload["tools"]},
+                {"tool_tax_list_tools", "tool_tax_get_schema", "tool_tax_call_tool"},
+            )
+
+    def test_mcp_proxy_lists_schema_and_forwards_call(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            script = Path(td) / "probe.py"
+            script.write_text(
+                """
+from __future__ import annotations
+
+import json
+import subprocess
+import sys
+
+p = subprocess.Popen(
+    [
+        sys.executable,
+        "-m",
+        "tool_tax.mcp_proxy",
+        "--",
+        sys.executable,
+        "tests/fixtures/mcp_stdio_server.py",
+    ],
+    stdin=subprocess.PIPE,
+    stdout=subprocess.PIPE,
+    text=True,
+    encoding="utf-8",
+)
+
+def send(message):
+    p.stdin.write(json.dumps(message, separators=(",", ":")) + "\\n")
+    p.stdin.flush()
+    return json.loads(p.stdout.readline())
+
+send({"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {"protocolVersion": "2025-06-18"}})
+p.stdin.write(json.dumps({"jsonrpc": "2.0", "method": "notifications/initialized"}) + "\\n")
+p.stdin.flush()
+indexed = send({"jsonrpc": "2.0", "id": 2, "method": "tools/call", "params": {"name": "tool_tax_list_tools", "arguments": {}}})
+schema = send({"jsonrpc": "2.0", "id": 3, "method": "tools/call", "params": {"name": "tool_tax_get_schema", "arguments": {"name": "search_docs"}}})
+called = send({"jsonrpc": "2.0", "id": 4, "method": "tools/call", "params": {"name": "tool_tax_call_tool", "arguments": {"name": "search_docs", "arguments": {"query": "mcp"}}}})
+p.stdin.close()
+p.terminate()
+print(json.dumps({"indexed": indexed, "schema": schema, "called": called}, sort_keys=True))
+""",
+                encoding="utf-8",
+            )
+            result = subprocess.check_output([sys.executable, str(script)], text=True, encoding="utf-8")
+            payload = json.loads(result)
+            index_payload = payload["indexed"]["result"]["structuredContent"]
+            schema_payload = payload["schema"]["result"]["structuredContent"]
+            call_payload = payload["called"]["result"]["structuredContent"]
+            self.assertEqual(index_payload["tool_count"], 2)
+            self.assertEqual(schema_payload["name"], "search_docs")
+            self.assertEqual(call_payload["called"], "search_docs")
 
 
 if __name__ == "__main__":

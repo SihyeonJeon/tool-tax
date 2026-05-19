@@ -2,11 +2,12 @@
 
 ## Next
 
+- Benchmark the proxy on more real MCP servers.
 - Optional exact tokenizers for major providers.
 
 ## Later
 
-- MCP proxy adapter that serves `tool-index.json` first and schema on demand.
+- Streamable HTTP proxy mode.
 
 ## Done
 
@@ -20,6 +21,7 @@
 - Live MCP stdio probing through `initialize` and `tools/list`.
 - Public MCP-native scan reports beyond OpenAPI catalogs.
 - Short terminal demo GIF in the README.
+- Experimental MCP stdio proxy with lazy schema loading.
 
 ## Not Now
 
