@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Added a positive naive MCP host benchmark for hosts that repeat visible tool
+  schemas in model prompt turns.
 - Added a Claude Code E2E benchmark with a negative result for single
   known-tool proxy tasks.
 

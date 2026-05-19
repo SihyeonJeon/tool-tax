@@ -38,6 +38,8 @@ filesystem tool schema:
 | Reduction | 87.6% |
 
 That measurement is host-agnostic. The E2E results below are host-specific.
+For a host that repeatedly includes the full visible tool catalog in prompt
+turns, see the positive [Naive MCP Host Benchmark](naive-mcp-host-benchmark.md).
 
 ## E2E Results
 
@@ -76,4 +78,3 @@ bash scripts/claude-code-e2e-benchmark.sh
 ```
 
 The script writes a summarized JSON file under `docs/benchmarks/`.
-

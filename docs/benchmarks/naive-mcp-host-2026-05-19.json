@@ -1,0 +1,53 @@
+{
+  "date": "2026-05-19",
+  "tool_tax_version": "0.5.1",
+  "benchmark": "naive-mcp-host",
+  "upstream_command": [
+    "npx",
+    "-y",
+    "@modelcontextprotocol/server-filesystem",
+    "/tmp"
+  ],
+  "method": "Simulates a minimal MCP host that includes the complete visible tool catalog in every model prompt turn.",
+  "direct_tool_count": 14,
+  "proxy_tool_count": 3,
+  "direct_catalog_tokens": 4091,
+  "proxy_catalog_tokens": 330,
+  "direct_known_result_tokens": 55,
+  "proxy_known_result_tokens": 55,
+  "scenarios": [
+    {
+      "case": "startup_only",
+      "direct_total_prompt_tokens": 4141,
+      "proxy_total_prompt_tokens": 380,
+      "delta_tokens": -3761,
+      "proxy_reduction_percent": 90.82,
+      "direct_turns": 1,
+      "proxy_turns": 1,
+      "direct_max_turn_prompt_tokens": 4141,
+      "proxy_max_turn_prompt_tokens": 380
+    },
+    {
+      "case": "known_tool_call",
+      "direct_total_prompt_tokens": 8349,
+      "proxy_total_prompt_tokens": 848,
+      "delta_tokens": -7501,
+      "proxy_reduction_percent": 89.84,
+      "direct_turns": 2,
+      "proxy_turns": 2,
+      "direct_max_turn_prompt_tokens": 4209,
+      "proxy_max_turn_prompt_tokens": 469
+    },
+    {
+      "case": "discover_then_call",
+      "direct_total_prompt_tokens": 8367,
+      "proxy_total_prompt_tokens": 6861,
+      "delta_tokens": -1506,
+      "proxy_reduction_percent": 18.0,
+      "direct_turns": 2,
+      "proxy_turns": 3,
+      "direct_max_turn_prompt_tokens": 4218,
+      "proxy_max_turn_prompt_tokens": 3282
+    }
+  ]
+}

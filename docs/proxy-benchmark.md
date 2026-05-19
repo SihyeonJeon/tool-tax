@@ -27,12 +27,18 @@ For a real Claude Code CLI run, see
 negative result for single known-tool tasks: Claude Code's own tool handling and
 prompt cache can dominate the raw MCP schema savings.
 
+For a host that does expose the full visible MCP catalog to every prompt turn,
+see [Naive MCP Host Benchmark](naive-mcp-host-benchmark.md). In that simulated
+host shape, the proxy reduced prompt tokens by 90.8% for startup-only and 89.8%
+for a known-tool task.
+
 ## Reproduce
 
 ```bash
 tool-tax mcp -- npx -y @modelcontextprotocol/server-filesystem /tmp
 tool-tax mcp -- tool-tax proxy -- npx -y @modelcontextprotocol/server-filesystem /tmp
 tool-tax proxy --call-timeout 120 -- npx -y @modelcontextprotocol/server-filesystem /tmp
+PYTHONPATH=src python3 scripts/naive-mcp-host-benchmark.py
 ```
 
 ## Limits

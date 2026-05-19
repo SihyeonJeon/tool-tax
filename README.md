@@ -232,6 +232,7 @@ can be fetched only when needed. The proxy is intentionally narrow: stdio,
 - [Estimator](docs/estimator.md)
 - [Compared](docs/compared.md)
 - [Changelog](CHANGELOG.md)
+- [Naive MCP host benchmark](docs/naive-mcp-host-benchmark.md)
 - [Claude Code E2E benchmark](docs/claude-code-e2e-benchmark.md)
 - [Public scan gallery](docs/scans/README.md)
 - [Proxy benchmark](docs/proxy-benchmark.md)
