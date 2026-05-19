@@ -11,7 +11,7 @@ carry much less schema text.
 ## Setup
 
 - Date: 2026-05-19
-- `tool-tax`: 0.5.1
+- `tool-tax`: 0.6.0
 - Upstream MCP server: `npx -y @modelcontextprotocol/server-filesystem /tmp`
 - Measurement: local `tool-tax` estimator over the simulated host prompt
 - Raw data: [naive-mcp-host-2026-05-19.json](benchmarks/naive-mcp-host-2026-05-19.json)

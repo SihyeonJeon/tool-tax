@@ -8,6 +8,7 @@ from pathlib import Path
 
 from . import __version__
 from .diff import dump_diff_json, to_diff_json, to_diff_markdown
+from .doctor import discover_config_paths, doctor_markdown, doctor_report
 from .extract import ExtractOptions, extract_tools
 from .github_comment import DEFAULT_MARKER, resolve_pr_number, upsert_pr_comment
 from .mcp_stdio import list_mcp_stdio_tools
@@ -107,6 +108,36 @@ def cmd_proxy(args: argparse.Namespace) -> int:
     return ToolTaxProxy(command, args.timeout, args.protocol_version, args.call_timeout, args.verbose).serve()
 
 
+def cmd_doctor(args: argparse.Namespace) -> int:
+    paths = [Path(path).expanduser() for path in args.mcp_config] if args.mcp_config else discover_config_paths(Path.cwd())
+    if not paths:
+        print("ERROR: no MCP config found. Pass --mcp-config PATH.", file=sys.stderr)
+        return 1
+    payload = doctor_report(
+        paths,
+        probe=not args.no_probe,
+        timeout=args.timeout,
+        protocol_version=args.protocol_version,
+        verbose=args.verbose,
+    )
+    output = json.dumps(payload, ensure_ascii=False, indent=2) + "\n" if args.format == "json" else doctor_markdown(payload)
+    write_report(output, Path(args.out).resolve() if args.out else None)
+    if args.github_step_summary:
+        append_step_summary(doctor_markdown(payload))
+    summary = payload["summary"]
+    if summary["error_count"] and not any(server.get("status") == "ok" for server in payload["servers"]):
+        return 1
+    failed = False
+    if args.max_tokens is not None and summary["total_tax_tokens"] > args.max_tokens:
+        failed = True
+    if args.max_server_tokens is not None:
+        failed = any(server.get("total_tax_tokens", 0) > args.max_server_tokens for server in payload["servers"])
+    if args.fail_on_grade:
+        ranks = {"lean": 0, "warm": 1, "expensive": 2, "brutal": 3}
+        failed = ranks[summary["grade"]] >= ranks[args.fail_on_grade]
+    return 2 if failed else 0
+
+
 def cmd_diff(args: argparse.Namespace) -> int:
     options = extract_options(args)
     base_records, base_errors = extract_tools([Path(args.base)], options)
@@ -173,7 +204,7 @@ def cmd_comment_pr(args: argparse.Namespace) -> int:
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="tool-tax",
-        description="Measure the hidden token bill of MCP and agent tool catalogs.",
+        description="Schema budget linter for MCP, OpenAPI, and agent tool catalogs.",
     )
     parser.add_argument("--version", action="version", version=f"tool-tax {__version__}")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -210,6 +241,20 @@ def build_parser() -> argparse.ArgumentParser:
     proxy.add_argument("--verbose", action="store_true", help="let upstream MCP server stderr pass through")
     proxy.add_argument("command", nargs=argparse.REMAINDER, help="upstream MCP server command after --")
     proxy.set_defaults(func=cmd_proxy)
+
+    doctor = sub.add_parser("doctor", help="inspect MCP configs and report tool-schema tax")
+    doctor.add_argument("--mcp-config", action="append", default=[], help="MCP config JSON path; defaults to common project files")
+    doctor.add_argument("--format", choices=["md", "json"], default="md")
+    doctor.add_argument("--out", help="write report to file")
+    doctor.add_argument("--no-probe", action="store_true", help="parse configs without executing MCP server commands")
+    doctor.add_argument("--timeout", type=float, default=10.0, help="seconds to wait for MCP initialize/tools responses")
+    doctor.add_argument("--protocol-version", default="2025-06-18", help="MCP protocol version sent at initialize")
+    doctor.add_argument("--verbose", action="store_true", help="let upstream MCP server stderr pass through")
+    doctor.add_argument("--max-tokens", type=int, help="fail if total configured MCP tool tax is above this")
+    doctor.add_argument("--max-server-tokens", type=int, help="fail if one configured MCP server is above this")
+    doctor.add_argument("--fail-on-grade", choices=["lean", "warm", "expensive", "brutal"])
+    doctor.add_argument("--github-step-summary", action="store_true", help="append Markdown report to GitHub step summary")
+    doctor.set_defaults(func=cmd_doctor)
 
     diff = sub.add_parser("diff", help="compare base and head tool catalogs")
     diff.add_argument("base", help="base file or directory")

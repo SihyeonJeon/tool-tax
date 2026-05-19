@@ -1,7 +1,10 @@
 # Changelog
 
-## Unreleased
+## 0.6.0
 
+- Added `tool-tax doctor` for MCP config schema-budget reports.
+- Repositioned the README around schema-budget linting and host-specific proxy
+  evidence.
 - Added a positive naive MCP host benchmark for hosts that repeat visible tool
   schemas in model prompt turns.
 - Added a Claude Code E2E benchmark with a negative result for single

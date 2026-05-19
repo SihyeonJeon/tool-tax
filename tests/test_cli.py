@@ -196,6 +196,60 @@ class CliTests(unittest.TestCase):
             payload = json.loads(out.read_text(encoding="utf-8"))
             self.assertEqual(payload["summary"]["tool_count"], 2)
 
+    def test_doctor_reports_mcp_config_tax(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            config = Path(td) / ".mcp.json"
+            out = Path(td) / "doctor.json"
+            config.write_text(
+                json.dumps(
+                    {
+                        "mcpServers": {
+                            "fixture": {
+                                "command": sys.executable,
+                                "args": ["tests/fixtures/mcp_stdio_server.py"],
+                            }
+                        }
+                    }
+                ),
+                encoding="utf-8",
+            )
+            code = main(["doctor", "--mcp-config", str(config), "--format", "json", "--out", str(out)])
+            self.assertEqual(code, 0)
+            payload = json.loads(out.read_text(encoding="utf-8"))
+            self.assertEqual(payload["summary"]["server_count"], 1)
+            self.assertEqual(payload["summary"]["probed_count"], 1)
+            self.assertEqual(payload["servers"][0]["tool_count"], 2)
+            self.assertGreater(payload["summary"]["total_tax_tokens"], 0)
+
+    def test_doctor_no_probe_does_not_execute_server(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            config = Path(td) / ".mcp.json"
+            out = Path(td) / "doctor.json"
+            config.write_text(
+                json.dumps({"mcpServers": {"bad": {"command": "definitely-not-a-real-command"}}}),
+                encoding="utf-8",
+            )
+            code = main(["doctor", "--mcp-config", str(config), "--no-probe", "--format", "json", "--out", str(out)])
+            self.assertEqual(code, 0)
+            payload = json.loads(out.read_text(encoding="utf-8"))
+            self.assertEqual(payload["servers"][0]["status"], "configured")
+            self.assertEqual(payload["summary"]["probed_count"], 0)
+
+    def test_doctor_skips_remote_mcp_server(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            config = Path(td) / ".mcp.json"
+            out = Path(td) / "doctor.json"
+            config.write_text(
+                json.dumps({"mcpServers": {"remote": {"url": "https://example.com/mcp"}}}),
+                encoding="utf-8",
+            )
+            code = main(["doctor", "--mcp-config", str(config), "--format", "json", "--out", str(out)])
+            self.assertEqual(code, 0)
+            payload = json.loads(out.read_text(encoding="utf-8"))
+            self.assertEqual(payload["servers"][0]["status"], "skipped")
+            self.assertEqual(payload["servers"][0]["transport"], "remote")
+            self.assertEqual(payload["summary"]["skipped_count"], 1)
+
     def test_mcp_proxy_exposes_three_lazy_tools(self) -> None:
         with tempfile.TemporaryDirectory() as td:
             out = Path(td) / "proxy.json"

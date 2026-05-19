@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import queue
 import shlex
 import subprocess
@@ -130,6 +131,7 @@ class MCPStdioClient:
         protocol_version: str = "2025-06-18",
         cwd: Path | None = None,
         verbose: bool = False,
+        env: dict[str, str] | None = None,
     ) -> None:
         if not command:
             raise MCPStdioError("missing MCP server command")
@@ -139,6 +141,7 @@ class MCPStdioClient:
         self.protocol_version = protocol_version
         self.cwd = cwd
         self.verbose = verbose
+        self.env = env
         self.process: subprocess.Popen[str] | None = None
         self.lines: queue.Queue[str | None] | None = None
         self.next_id = 1
@@ -158,6 +161,7 @@ class MCPStdioClient:
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=None if self.verbose else subprocess.DEVNULL,
+            env={**os.environ, **self.env} if self.env else None,
             text=True,
             encoding="utf-8",
             bufsize=1,
@@ -269,6 +273,7 @@ def list_mcp_stdio_tools(
     protocol_version: str = "2025-06-18",
     cwd: Path | None = None,
     verbose: bool = False,
+    env: dict[str, str] | None = None,
 ) -> tuple[list[ToolRecord], list[str]]:
     if not command:
         raise MCPStdioError("missing MCP server command")
@@ -279,6 +284,7 @@ def list_mcp_stdio_tools(
         protocol_version=protocol_version,
         cwd=cwd,
         verbose=verbose,
+        env=env,
     )
     source = client.source
     records: list[ToolRecord] = []

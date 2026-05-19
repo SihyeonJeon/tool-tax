@@ -1,18 +1,22 @@
 # tool-tax
 
-**See how many tokens your agent tools burn before the user even asks a question.**
+**A schema budget linter for agent tools.**
 
 `tool-tax` scans MCP-style tool catalogs, JSON/YAML tool manifests, and OpenAPI
-files. It can also probe a live MCP stdio server with `tools/list`. It shows
-the full schema cost, ranks the heaviest tools, diffs catalog changes in pull
-requests, writes a slim tool index for progressive loading, and can run a
-small stdio proxy that lazy-loads upstream schemas.
+files. It can also inspect MCP config files, probe live MCP stdio servers with
+`tools/list`, and show the schema tax your agent may pay before the user asks a
+question.
+
+Use it to rank heavy tools, fail pull requests when catalogs grow, write a slim
+tool index for progressive loading, and test whether a lazy-schema stdio proxy
+helps your host.
 
 ![tool-tax live MCP demo](https://raw.githubusercontent.com/SihyeonJeon/tool-tax/main/docs/assets/tool-tax-demo.gif)
 
 ```bash
 pipx install tool-tax
 
+tool-tax doctor --mcp-config .mcp.json
 tool-tax mcp -- npx -y @modelcontextprotocol/server-filesystem /tmp
 tool-tax scan examples
 tool-tax diff old-tools.json new-tools.json
@@ -34,13 +38,14 @@ Agents keep getting more tools. MCP servers, browser tools, GitHub tools,
 database tools, and internal APIs all ship long schemas. If every schema is
 loaded up front, your agent pays a context tax before it starts working.
 
-`tool-tax` gives that tax a number.
+`tool-tax` gives that tax a number and lets CI enforce a budget.
 
 ## Install If
 
 - You use Claude Code, Cursor, or another agent with multiple MCP servers.
 - You expose internal OpenAPI routes or tool catalogs to an agent.
 - You want CI to catch tool-schema bloat before it lands in a pull request.
+- You need evidence before claiming that a lazy proxy saves runtime context.
 
 ## Do Not Use If
 
@@ -51,6 +56,7 @@ loaded up front, your agent pays a context tax before it starts working.
 ## What It Does
 
 - Finds tool definitions in JSON, YAML, and OpenAPI files.
+- Inspects MCP config files with `mcpServers` entries.
 - Probes live MCP stdio servers through `initialize` + `tools/list`.
 - Estimates token cost for each tool schema.
 - Ranks the most expensive tools.
@@ -71,7 +77,7 @@ pipx install tool-tax
 From GitHub:
 
 ```bash
-pipx install git+https://github.com/SihyeonJeon/tool-tax.git@v0.5.1
+pipx install git+https://github.com/SihyeonJeon/tool-tax.git@v0.6.0
 ```
 
 From a clone:
@@ -85,6 +91,13 @@ python3 -m pip install -e .
 Installs one runtime dependency: `PyYAML`.
 
 ## Use
+
+Inspect an MCP config:
+
+```bash
+tool-tax doctor --mcp-config .mcp.json
+tool-tax doctor --mcp-config .cursor/mcp.json --format json
+```
 
 Scan a repo:
 
@@ -150,7 +163,7 @@ tool-tax pack openapi.json --operation "PostPayment*" --out .tool-tax-payments
 Use it as a GitHub Action:
 
 ```yaml
-- uses: SihyeonJeon/tool-tax@v0.5.1
+- uses: SihyeonJeon/tool-tax@v0.6.0
   with:
     path: .
     max-tokens: "12000"
@@ -176,6 +189,7 @@ Grade: **lean**
 ## Supports
 
 - Live MCP stdio servers
+- MCP config files with `mcpServers`
 - Lazy-schema MCP stdio proxy
 - MCP-style JSON/YAML tool arrays
 - Agent tool manifests with `name`, `description`, and `inputSchema`
@@ -205,6 +219,13 @@ Direct-vs-proxy upfront schema tax:
 | Memory | 1,324 | 260 | 80.4% |
 | Sequential Thinking | 858 | 260 | 69.7% |
 
+Host-level benchmarks:
+
+| Host shape | Result | Link |
+| --- | --- | --- |
+| Naive host that repeats visible tool schemas in prompts | proxy positive: 90.8% lower startup prompt tokens | [Naive MCP host benchmark](docs/naive-mcp-host-benchmark.md) |
+| Claude Code 2.1.143 single known-tool task | proxy negative: one extra turn and higher measured cost | [Claude Code E2E benchmark](docs/claude-code-e2e-benchmark.md) |
+
 ## Repo Shape
 
 ```text
@@ -220,11 +241,12 @@ docs/           # trend scan and repo structure notes
 - Not prompt compression for normal chat messages.
 - Not a security sandbox for untrusted MCP servers.
 - Not a full MCP gateway.
+- Not a universal runtime token saver across all agent hosts.
 
-It measures the up-front schema tax, creates a smaller index, and includes an
-experimental stdio proxy that exposes three wrapper tools so upstream schemas
-can be fetched only when needed. The proxy is intentionally narrow: stdio,
-`tools/list`, and `tools/call`.
+It measures the up-front schema tax, creates a smaller index, catches catalog
+growth in CI, and includes an experimental stdio proxy that exposes three
+wrapper tools so upstream schemas can be fetched only when needed. The proxy is
+intentionally narrow: stdio, `tools/list`, and `tools/call`.
 
 ## More
 
@@ -232,6 +254,8 @@ can be fetched only when needed. The proxy is intentionally narrow: stdio,
 - [Estimator](docs/estimator.md)
 - [Compared](docs/compared.md)
 - [Changelog](CHANGELOG.md)
+- [Doctor](docs/doctor.md)
+- [Host matrix](docs/host-matrix.md)
 - [Naive MCP host benchmark](docs/naive-mcp-host-benchmark.md)
 - [Claude Code E2E benchmark](docs/claude-code-e2e-benchmark.md)
 - [Public scan gallery](docs/scans/README.md)
