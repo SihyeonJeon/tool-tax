@@ -266,6 +266,7 @@ intentionally narrow: stdio, `tools/list`, and `tools/call`.
 - [Proxy benchmark](docs/proxy-benchmark.md)
 - [PyPI publish notes](docs/pypi-publish.md)
 - [Launch kit](docs/launch-kit.md)
+- [Outreach](docs/outreach.md)
 - [Trend scan](docs/trend-scan-2026-05-17.md)
 - [Repo shape scan](docs/repo-shape-scan.md)
 
