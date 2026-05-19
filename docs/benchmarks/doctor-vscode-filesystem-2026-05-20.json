@@ -1,0 +1,54 @@
+{
+  "summary": {
+    "config_count": 1,
+    "server_count": 1,
+    "probed_count": 1,
+    "skipped_count": 0,
+    "error_count": 0,
+    "total_tax_tokens": 2102,
+    "total_index_tokens": 647,
+    "estimated_savings_tokens": 1455,
+    "estimated_savings_percent": 69.22,
+    "worst_tool_tokens": 242,
+    "grade": "lean"
+  },
+  "servers": [
+    {
+      "name": "filesystem",
+      "config_path": "examples/host-configs/vscode-filesystem.mcp.json",
+      "transport": "stdio",
+      "command": "npx -y @modelcontextprotocol/server-filesystem /tmp",
+      "status": "ok",
+      "tool_count": 14,
+      "total_tax_tokens": 2102,
+      "total_index_tokens": 647,
+      "estimated_savings_tokens": 1455,
+      "estimated_savings_percent": 69.22,
+      "worst_tool_tokens": 242,
+      "grade": "lean",
+      "heaviest_tools": [
+        {
+          "name": "edit_file",
+          "tax_tokens": 242
+        },
+        {
+          "name": "read_text_file",
+          "tax_tokens": 225
+        },
+        {
+          "name": "search_files",
+          "tax_tokens": 203
+        },
+        {
+          "name": "read_multiple_files",
+          "tax_tokens": 174
+        },
+        {
+          "name": "directory_tree",
+          "tax_tokens": 174
+        }
+      ]
+    }
+  ],
+  "errors": []
+}

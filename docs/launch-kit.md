@@ -7,8 +7,8 @@ checks are already on topic.
 
 ## One-Line Pitch
 
-`tool-tax` measures the hidden token cost of agent tool catalogs and writes a
-smaller progressive-loading index.
+`tool-tax doctor` finds the token tax hiding in Claude Code, Cursor, VS Code,
+and Cline MCP configs.
 
 ## Demo
 
@@ -16,35 +16,35 @@ GIF: `docs/assets/tool-tax-demo.gif`
 
 ```bash
 pipx install tool-tax
-tool-tax scan examples
-tool-tax mcp -- npx -y @modelcontextprotocol/server-filesystem /tmp
-tool-tax pack examples --out .tool-tax
+tool-tax doctor --include-global --no-probe
+tool-tax doctor --mcp-config .mcp.json
 ```
 
 ```text
-Tools: 7
-Full tool tax: 1,144 est. tokens
-Slim index: 309 est. tokens
-Slim-index savings: 835 est. tokens (73.0%)
+Servers: 1
+Tools: 14
+Full tool tax: 2,102 est. tokens
+Slim index: 647 est. tokens
+Slim-index savings: 1,455 est. tokens (69.2%)
 ```
 
 ## Short Post
 
-I made `tool-tax`, a small CLI for MCP and agent tool catalogs.
+I made `tool-tax`, a small CLI for MCP configs and agent tool catalogs.
 
-It scans JSON/YAML/OpenAPI tool definitions, can probe live MCP stdio servers,
-estimates the up-front schema token tax, diffs pull-request changes, writes a
-slim `tool-index.json`, and includes an experimental stdio proxy for lazy
-schema loading.
+The main command is `tool-tax doctor`: it reads Claude Code, Cursor, VS Code,
+and Cline MCP configs, safely lists configured servers with `--no-probe`, and
+can probe trusted stdio servers with `initialize` + `tools/list` to report the
+schema tax before those tools hit context.
 
 Repo: https://github.com/SihyeonJeon/tool-tax
 
-Useful if your agent ships with a growing MCP/tool list and you want a CI check
-before the catalog silently bloats.
+Useful if your local agent setup has a growing MCP list and you want a concrete
+number before the catalog silently bloats.
 
 ## Show HN-Style Title
 
-Show HN: tool-tax, a CLI that measures hidden token cost in agent tool catalogs
+Show HN: tool-tax, a CLI that finds hidden token cost in MCP configs
 
 ## Technical Post
 
@@ -53,8 +53,10 @@ the context spent before the first user request: tool schemas.
 
 `tool-tax` gives that cost a number:
 
+- inspect Claude Code, Cursor, VS Code, and Cline MCP configs
+- preview user-level configs with `doctor --include-global --no-probe`
+- probe trusted MCP stdio servers with `initialize` + `tools/list`
 - scan MCP-style JSON/YAML, nested tool manifests, and OpenAPI operations
-- probe live MCP stdio servers with `initialize` + `tools/list`
 - rank expensive tools
 - produce Markdown/JSON reports
 - diff base/head catalogs for pull requests
@@ -68,6 +70,7 @@ No billing claims and no prompt-compression claims.
 
 Measured examples:
 
+- VS Code-style MCP Filesystem config: 14 tools, 2,102 est. schema tokens
 - MCP Filesystem: 2,102 -> 647 est. tokens, 69.2% smaller
 - MCP Filesystem through proxy: 2,102 -> 260 est. upfront tokens, 87.6% smaller
 - MCP Memory: 1,324 -> 340 est. tokens, 74.3% smaller

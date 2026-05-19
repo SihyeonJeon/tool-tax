@@ -6,6 +6,7 @@ lazy or cached MCP handling.
 
 | Host shape | Evidence | Result |
 | --- | --- | --- |
+| VS Code-style config with MCP Filesystem | [Doctor host config benchmark](doctor-host-config-benchmark.md) | doctor positive |
 | Naive MCP host that repeats all visible schemas in prompt turns | [Naive MCP host benchmark](naive-mcp-host-benchmark.md) | proxy positive |
 | Claude Code 2.1.143, single known filesystem tool task | [Claude Code E2E benchmark](claude-code-e2e-benchmark.md) | proxy negative |
 | Cursor | not measured yet | TBD |

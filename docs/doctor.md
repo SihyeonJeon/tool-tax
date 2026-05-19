@@ -75,6 +75,9 @@ Sources: [Claude Code MCP](https://code.claude.com/docs/en/mcp),
 
 Example host configs live in [examples/host-configs](../examples/host-configs).
 
+For a real config probe, see the
+[Doctor host config benchmark](doctor-host-config-benchmark.md).
+
 ## Security Boundary
 
 By default, `doctor` executes the configured stdio server commands so it can

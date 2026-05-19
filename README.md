@@ -1,15 +1,14 @@
 # tool-tax
 
-**A schema budget linter for agent tools.**
+**Find the token tax hiding in your MCP config.**
 
-`tool-tax` scans MCP-style tool catalogs, JSON/YAML tool manifests, and OpenAPI
-files. It can also inspect MCP config files, probe live MCP stdio servers with
-`tools/list`, and show the schema tax your agent may pay before the user asks a
-question.
+`tool-tax doctor` reads Claude Code, Cursor, VS Code, and Cline MCP configs,
+probes stdio servers with `tools/list`, and shows how much tool-schema text your
+agent may load before the user asks a question.
 
-Use it to rank heavy tools, fail pull requests when catalogs grow, write a slim
-tool index for progressive loading, and test whether a lazy-schema stdio proxy
-helps your host.
+It also scans JSON/YAML tool manifests and OpenAPI files, diffs catalog changes
+in CI, writes a slim progressive-loading index, and can test whether a
+lazy-schema stdio proxy helps your host.
 
 ![tool-tax live MCP demo](https://raw.githubusercontent.com/SihyeonJeon/tool-tax/main/docs/assets/tool-tax-demo.gif)
 
@@ -18,7 +17,6 @@ pipx install tool-tax
 
 tool-tax doctor --mcp-config .mcp.json
 tool-tax doctor --include-global --no-probe
-tool-tax mcp -- npx -y @modelcontextprotocol/server-filesystem /tmp
 tool-tax scan examples
 tool-tax diff old-tools.json new-tools.json
 tool-tax pack examples --out .tool-tax
@@ -27,10 +25,11 @@ tool-tax pack examples --out .tool-tax
 Example result:
 
 ```text
+Servers: 1
 Tools: 14
-Full tool tax: 2,102 est. tokens
+Total tool tax: 2,102 est. tokens
 Slim index: 647 est. tokens
-Slim-index savings: 1,455 est. tokens (69.2%)
+Savings: 1,455 est. tokens (69.2%)
 ```
 
 ## Why
@@ -192,7 +191,7 @@ Grade: **lean**
 ## Supports
 
 - Live MCP stdio servers
-- MCP config files with `mcpServers`
+- MCP config files with `mcpServers` or VS Code-style `servers`
 - Lazy-schema MCP stdio proxy
 - MCP-style JSON/YAML tool arrays
 - Agent tool manifests with `name`, `description`, and `inputSchema`
@@ -226,6 +225,7 @@ Host-level benchmarks:
 
 | Host shape | Result | Link |
 | --- | --- | --- |
+| VS Code-style MCP config with Filesystem server | doctor reports 14 tools and 2,102 est. schema tokens | [Doctor host config benchmark](docs/doctor-host-config-benchmark.md) |
 | Naive host that repeats visible tool schemas in prompts | proxy positive: 90.8% lower startup prompt tokens | [Naive MCP host benchmark](docs/naive-mcp-host-benchmark.md) |
 | Claude Code 2.1.143 single known-tool task | proxy negative: one extra turn and higher measured cost | [Claude Code E2E benchmark](docs/claude-code-e2e-benchmark.md) |
 
@@ -258,6 +258,7 @@ intentionally narrow: stdio, `tools/list`, and `tools/call`.
 - [Compared](docs/compared.md)
 - [Changelog](CHANGELOG.md)
 - [Doctor](docs/doctor.md)
+- [Doctor host config benchmark](docs/doctor-host-config-benchmark.md)
 - [Host matrix](docs/host-matrix.md)
 - [Naive MCP host benchmark](docs/naive-mcp-host-benchmark.md)
 - [Claude Code E2E benchmark](docs/claude-code-e2e-benchmark.md)
