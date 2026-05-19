@@ -13,7 +13,7 @@ smaller progressive-loading index.
 ## Demo
 
 ```bash
-pipx install git+https://github.com/SihyeonJeon/tool-tax.git@v0.2.0
+pipx install tool-tax
 tool-tax scan examples
 tool-tax pack examples --out .tool-tax
 ```

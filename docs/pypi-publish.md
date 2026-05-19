@@ -1,25 +1,25 @@
 # PyPI Publish
 
-`tool-tax` is ready for PyPI packaging, but upload requires PyPI credentials or
-PyPI Trusted Publishing configuration.
+`tool-tax` is published on PyPI:
+https://pypi.org/project/tool-tax/
 
 ## Current Package State
 
-- PyPI name check: `tool-tax` is not published yet.
-- Version: `0.2.0`
+- PyPI package: https://pypi.org/project/tool-tax/
+- Version: `0.2.1`
 - Build: `python -m build` passes.
 - Metadata: `twine check dist/*` passes.
-- Release assets: https://github.com/SihyeonJeon/tool-tax/releases/tag/v0.2.0
+- Release assets: https://github.com/SihyeonJeon/tool-tax/releases/tag/v0.2.1
 - GitHub environment `pypi` exists.
-- Manual `publish-pypi` workflow run reached PyPI and failed only because no
-  matching PyPI trusted publisher exists yet:
-  https://github.com/SihyeonJeon/tool-tax/actions/runs/25991099550
+- Manual `publish-pypi` workflow run succeeded:
+  https://github.com/SihyeonJeon/tool-tax/actions/runs/26080495739
 
-## Recommended Path
+## Publishing Path
 
-Use PyPI Trusted Publishing instead of storing a long-lived API token.
+This project uses PyPI Trusted Publishing instead of storing a long-lived API
+token.
 
-Create a pending PyPI publisher for:
+Publisher fields:
 
 | Field | Value |
 | --- | --- |
@@ -29,11 +29,7 @@ Create a pending PyPI publisher for:
 | Workflow | `publish-pypi.yml` |
 | Environment | `pypi` |
 
-After that, run the `publish-pypi` workflow manually or publish the next GitHub
-release.
-
-The failed workflow showed these OIDC claims, which should match the PyPI
-pending publisher:
+The successful workflow used these OIDC claims:
 
 ```text
 repository_owner: SihyeonJeon
@@ -54,9 +50,9 @@ TWINE_USERNAME=__token__ TWINE_PASSWORD="$PYPI_API_TOKEN" python -m twine upload
 
 Do not commit tokens, `.pypirc`, or shell history containing credentials.
 
-## After Publish
+## Install
 
-Update README install commands:
+Install from PyPI:
 
 ```bash
 pipx install tool-tax
@@ -65,5 +61,5 @@ pipx install tool-tax
 Keep the GitHub install command as a fallback:
 
 ```bash
-pipx install git+https://github.com/SihyeonJeon/tool-tax.git@v0.2.0
+pipx install git+https://github.com/SihyeonJeon/tool-tax.git@v0.2.1
 ```

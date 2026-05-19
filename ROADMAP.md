@@ -2,7 +2,6 @@
 
 ## Next
 
-- PyPI release after Trusted Publishing or token setup: [#2](https://github.com/SihyeonJeon/tool-tax/issues/2)
 - More public MCP-native scan fixtures, beyond OpenAPI catalogs.
 
 ## Later
@@ -18,6 +17,7 @@
 - GitHub Action with step summary and optional PR comment: [#3](https://github.com/SihyeonJeon/tool-tax/issues/3)
 - Public scan gallery from large OpenAPI catalogs: [#5](https://github.com/SihyeonJeon/tool-tax/issues/5)
 - PyPI release workflow and publish notes.
+- PyPI release: [#2](https://github.com/SihyeonJeon/tool-tax/issues/2)
 
 ## Not Now
 

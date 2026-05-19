@@ -12,7 +12,7 @@ jobs:
       - uses: actions/setup-python@v6.2.0
         with:
           python-version: "3.12"
-      - uses: SihyeonJeon/tool-tax@v0.2.0
+      - uses: SihyeonJeon/tool-tax@v0.2.1
         with:
           path: .
           max-tokens: "12000"

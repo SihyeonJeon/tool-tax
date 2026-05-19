@@ -37,10 +37,10 @@ High-star repos in this category usually have at least one of:
 - CI budget gate;
 - generated progressive-loading pack;
 - concise README;
-- no PyPI package yet;
+- PyPI package available;
 - no demo video;
-- no integrations beyond CLI;
-- no external distribution yet.
+- GitHub Action integration;
+- package-manager distribution through PyPI.
 
 ## Appropriate Star Range
 
@@ -76,7 +76,6 @@ large public catalogs:
 
 ## Work To Do Next
 
-- Publish to PyPI.
 - Add MCP-native scan reports beyond OpenAPI catalogs.
 - Add OpenAPI slicing by tag/path.
 - Explore a runtime MCP proxy/router only if it can beat existing SOTA tools in
