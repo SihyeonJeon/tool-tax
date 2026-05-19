@@ -12,6 +12,8 @@ smaller progressive-loading index.
 
 ## Demo
 
+GIF: `docs/assets/tool-tax-demo.gif`
+
 ```bash
 pipx install tool-tax
 tool-tax scan examples

@@ -7,11 +7,13 @@ files. It can also probe a live MCP stdio server with `tools/list`. It shows
 the full schema cost, ranks the heaviest tools, diffs catalog changes in pull
 requests, and writes a slim tool index for progressive loading.
 
+![tool-tax live MCP demo](docs/assets/tool-tax-demo.gif)
+
 ```bash
 pipx install tool-tax
 
-tool-tax scan examples
 tool-tax mcp -- npx -y @modelcontextprotocol/server-filesystem /tmp
+tool-tax scan examples
 tool-tax diff old-tools.json new-tools.json
 tool-tax pack examples --out .tool-tax
 ```
@@ -19,10 +21,10 @@ tool-tax pack examples --out .tool-tax
 Example result:
 
 ```text
-Tools: 7
-Full tool tax: 1,144 est. tokens
-Slim index: 309 est. tokens
-Potential savings: 835 est. tokens (73.0%)
+Tools: 14
+Full tool tax: 2,102 est. tokens
+Slim index: 647 est. tokens
+Potential savings: 1,455 est. tokens (69.2%)
 ```
 
 ## Why

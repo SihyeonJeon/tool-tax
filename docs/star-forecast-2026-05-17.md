@@ -38,7 +38,7 @@ High-star repos in this category usually have at least one of:
 - generated progressive-loading pack;
 - concise README;
 - PyPI package available;
-- no demo video;
+- terminal demo GIF in the README;
 - GitHub Action integration;
 - package-manager distribution through PyPI;
 - live MCP stdio probing with public MCP scan reports.
@@ -75,10 +75,10 @@ stdio probing, and scans of large public catalogs:
   running the tool.
 - Add JSON recommendations for machine-readable CI/report consumers.
 - Add live MCP stdio scan reports so the repo is not only OpenAPI-based.
+- Add a short terminal demo GIF.
 
 ## Work To Do Now
 
-- Add a short terminal demo GIF/asciinema.
 - Add optional exact tokenizers for provider-specific estimates.
 - Explore a runtime MCP proxy/router only if it can beat existing SOTA tools in
   a narrow workflow.

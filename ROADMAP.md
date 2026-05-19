@@ -2,11 +2,10 @@
 
 ## Next
 
-- Short terminal demo GIF/asciinema.
+- Optional exact tokenizers for major providers.
 
 ## Later
 
-- Optional exact tokenizers for major providers.
 - MCP proxy adapter that serves `tool-index.json` first and schema on demand.
 
 ## Done
@@ -20,6 +19,7 @@
 - OpenAPI slicing by tag, path, or operation group.
 - Live MCP stdio probing through `initialize` and `tools/list`.
 - Public MCP-native scan reports beyond OpenAPI catalogs.
+- Short terminal demo GIF in the README.
 
 ## Not Now
 
