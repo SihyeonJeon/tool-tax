@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Added a Claude Code E2E benchmark with a negative result for single
+  known-tool proxy tasks.
+
 ## 0.5.1
 
 - Corrected the security boundary for live MCP and proxy modes.

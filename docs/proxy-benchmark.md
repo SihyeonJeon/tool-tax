@@ -22,6 +22,11 @@ for one.
 These numbers are local estimates for schema text. They are not provider billing
 totals.
 
+For a real Claude Code CLI run, see
+[Claude Code E2E Benchmark](claude-code-e2e-benchmark.md). That benchmark is a
+negative result for single known-tool tasks: Claude Code's own tool handling and
+prompt cache can dominate the raw MCP schema savings.
+
 ## Reproduce
 
 ```bash

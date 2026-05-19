@@ -232,6 +232,7 @@ can be fetched only when needed. The proxy is intentionally narrow: stdio,
 - [Estimator](docs/estimator.md)
 - [Compared](docs/compared.md)
 - [Changelog](CHANGELOG.md)
+- [Claude Code E2E benchmark](docs/claude-code-e2e-benchmark.md)
 - [Public scan gallery](docs/scans/README.md)
 - [Proxy benchmark](docs/proxy-benchmark.md)
 - [PyPI publish notes](docs/pypi-publish.md)
