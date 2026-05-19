@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import os
+import re
 import shlex
 from dataclasses import dataclass
 from pathlib import Path
@@ -18,9 +20,12 @@ class MCPConfigServer:
     name: str
     command: list[str]
     source_path: Path
+    source_label: str
+    display_command: list[str]
     cwd: Path | None = None
     env: dict[str, str] | None = None
     transport: str = "stdio"
+    disabled: bool = False
 
 
 DEFAULT_CONFIG_NAMES = (
@@ -29,10 +34,33 @@ DEFAULT_CONFIG_NAMES = (
     ".cursor/mcp.json",
     ".vscode/mcp.json",
 )
+GLOBAL_CONFIG_NAMES = (
+    ".cursor/mcp.json",
+    ".claude.json",
+    ".cline/mcp.json",
+    ".cline/data/settings/cline_mcp_settings.json",
+    "Library/Application Support/Code/User/mcp.json",
+    "Library/Application Support/Code/User/globalStorage/saoudrizwan.claude-dev/settings/cline_mcp_settings.json",
+    ".config/Code/User/mcp.json",
+    ".config/Code/User/globalStorage/saoudrizwan.claude-dev/settings/cline_mcp_settings.json",
+)
+VAR_PATTERN = re.compile(r"\$\{([^}]+)\}")
 
 
-def discover_config_paths(cwd: Path) -> list[Path]:
-    return [path for name in DEFAULT_CONFIG_NAMES if (path := cwd / name).exists()]
+def discover_config_paths(cwd: Path, include_global: bool = False, home: Path | None = None) -> list[Path]:
+    paths = [path for name in DEFAULT_CONFIG_NAMES if (path := cwd / name).exists()]
+    if include_global:
+        root = home or Path.home()
+        paths.extend(path for name in GLOBAL_CONFIG_NAMES if (path := root / name).exists())
+    seen: set[Path] = set()
+    unique: list[Path] = []
+    for path in paths:
+        resolved = path.expanduser().resolve()
+        if resolved in seen:
+            continue
+        seen.add(resolved)
+        unique.append(path)
+    return unique
 
 
 def _string_map(value: Any) -> dict[str, str] | None:
@@ -41,78 +69,182 @@ def _string_map(value: Any) -> dict[str, str] | None:
     return {str(key): str(item) for key, item in value.items()}
 
 
-def _server_command(raw: JsonObject) -> list[str] | None:
+def _expand_string(value: str, context_dir: Path, home: Path, redact: bool = False) -> str:
+    def replace(match: re.Match[str]) -> str:
+        expression = match.group(1)
+        if expression == "workspaceFolder":
+            return str(context_dir)
+        if expression == "workspaceFolderBasename":
+            return context_dir.name
+        if expression == "userHome":
+            return str(home)
+        if expression in {"pathSeparator", "/"}:
+            return os.sep
+        if expression.startswith("env:"):
+            name = expression[4:]
+            return f"${{{expression}}}" if redact else os.environ.get(name, "")
+        if ":-" in expression:
+            name, default = expression.split(":-", 1)
+            return f"${{{name}}}" if redact and name in os.environ else os.environ.get(name, default)
+        return f"${{{expression}}}" if redact and expression in os.environ else os.environ.get(expression, "")
+
+    return VAR_PATTERN.sub(replace, value)
+
+
+def _expand_list(values: list[str], context_dir: Path, home: Path, redact: bool = False) -> list[str]:
+    return [_expand_string(value, context_dir, home, redact=redact) for value in values]
+
+
+def _server_command(raw: JsonObject, context_dir: Path, home: Path) -> tuple[list[str], list[str]] | None:
     command = raw.get("command")
     if not isinstance(command, str) or not command:
         return None
     args = raw.get("args", [])
     if not isinstance(args, list):
         args = []
-    return [command, *(str(arg) for arg in args)]
+    command_parts = [command, *(str(arg) for arg in args)]
+    return (
+        _expand_list(command_parts, context_dir, home, redact=False),
+        _expand_list(command_parts, context_dir, home, redact=True),
+    )
 
 
 def _server_transport(raw: JsonObject) -> str:
     transport = raw.get("type") or raw.get("transport")
     if transport:
-        return str(transport).lower()
+        normalized = str(transport).lower()
+        if normalized in {"streamablehttp", "streamable-http", "http", "sse"}:
+            return "remote"
+        return normalized
     if raw.get("url"):
         return "remote"
     return "stdio"
 
 
-def load_mcp_config(path: Path) -> tuple[list[MCPConfigServer], list[str]]:
+def _context_dir_for_path(path: Path, project_root: Path | None, home: Path) -> Path:
+    expanded = path.expanduser()
+    parent = expanded.parent
+    if expanded.name == "mcp.json" and parent.name in {".cursor", ".vscode", ".cline"}:
+        return parent.parent
+    if project_root is not None and expanded.resolve().is_relative_to(home.expanduser().resolve()):
+        return project_root
+    return parent
+
+
+def _servers_contexts(
+    payload: JsonObject,
+    path: Path,
+    project_root: Path | None,
+    all_projects: bool,
+    home: Path,
+) -> tuple[list[tuple[str, dict[str, Any], Path]], list[str]]:
+    contexts: list[tuple[str, dict[str, Any], Path]] = []
     errors: list[str] = []
+    root_servers = payload.get("mcpServers") or payload.get("servers")
+    if isinstance(root_servers, dict):
+        contexts.append((str(path), root_servers, _context_dir_for_path(path, project_root, home)))
+
+    projects = payload.get("projects")
+    if isinstance(projects, dict):
+        root = project_root.resolve() if project_root is not None else None
+        for project_name, raw_project in projects.items():
+            if not isinstance(raw_project, dict):
+                continue
+            project_servers = raw_project.get("mcpServers") or raw_project.get("servers")
+            if not isinstance(project_servers, dict):
+                continue
+            project_path = Path(str(project_name)).expanduser()
+            if not project_path.is_absolute():
+                project_path = (path.parent / project_path).resolve()
+            if not all_projects and root is not None and project_path.resolve() != root:
+                continue
+            label = f"{path}#projects[{project_name}]"
+            contexts.append((label, project_servers, project_path))
+
+    if not contexts and not isinstance(projects, dict):
+        errors.append(f"{path}: no mcpServers object found")
+    return contexts, errors
+
+
+def _expanded_env(raw: JsonObject, context_dir: Path, home: Path) -> dict[str, str] | None:
+    env = _string_map(raw.get("env"))
+    if env is None:
+        return None
+    return {key: _expand_string(value, context_dir, home) for key, value in env.items()}
+
+
+def load_mcp_config(
+    path: Path,
+    project_root: Path | None = None,
+    all_projects: bool = False,
+    home: Path | None = None,
+) -> tuple[list[MCPConfigServer], list[str]]:
+    errors: list[str] = []
+    home = home or Path.home()
     try:
         payload = json.loads(path.read_text(encoding="utf-8"))
     except Exception as exc:  # noqa: BLE001
         return [], [f"{path}: {exc}"]
     if not isinstance(payload, dict):
         return [], [f"{path}: root must be a JSON object"]
-    servers = payload.get("mcpServers") or payload.get("servers")
-    if not isinstance(servers, dict):
-        return [], [f"{path}: no mcpServers object found"]
+    contexts, context_errors = _servers_contexts(payload, path, project_root, all_projects, home)
+    errors.extend(context_errors)
     configs: list[MCPConfigServer] = []
-    for name, raw in servers.items():
-        if not isinstance(raw, dict):
-            errors.append(f"{path}: server {name} must be an object")
-            continue
-        transport = _server_transport(raw)
-        if transport not in {"stdio", "command"}:
+    for source_label, servers, context_dir in contexts:
+        for name, raw in servers.items():
+            if not isinstance(raw, dict):
+                errors.append(f"{source_label}: server {name} must be an object")
+                continue
+            transport = _server_transport(raw)
+            disabled = raw.get("disabled") is True
+            if transport not in {"stdio", "command"}:
+                configs.append(
+                    MCPConfigServer(
+                        name=str(name),
+                        command=[],
+                        source_path=path,
+                        source_label=source_label,
+                        display_command=[],
+                        transport=transport,
+                        disabled=disabled,
+                    )
+                )
+                continue
+            command_pair = _server_command(raw, context_dir, home)
+            if command_pair is None:
+                errors.append(f"{source_label}: server {name} has no command")
+                continue
+            command, display_command = command_pair
+            cwd_value = raw.get("cwd")
+            cwd = Path(_expand_string(str(cwd_value), context_dir, home)).expanduser() if cwd_value else None
+            if cwd is not None and not cwd.is_absolute():
+                cwd = (context_dir / cwd).resolve()
             configs.append(
                 MCPConfigServer(
                     name=str(name),
-                    command=[],
+                    command=command,
                     source_path=path,
-                    transport=transport,
+                    source_label=source_label,
+                    display_command=display_command,
+                    cwd=cwd,
+                    env=_expanded_env(raw, context_dir, home),
+                    transport="stdio",
+                    disabled=disabled,
                 )
             )
-            continue
-        command = _server_command(raw)
-        if command is None:
-            errors.append(f"{path}: server {name} has no command")
-            continue
-        cwd_value = raw.get("cwd")
-        cwd = Path(str(cwd_value)).expanduser() if cwd_value else None
-        if cwd is not None and not cwd.is_absolute():
-            cwd = (path.parent / cwd).resolve()
-        configs.append(
-            MCPConfigServer(
-                name=str(name),
-                command=command,
-                source_path=path,
-                cwd=cwd,
-                env=_string_map(raw.get("env")),
-                transport="stdio",
-            )
-        )
     return configs, errors
 
 
-def load_configs(paths: list[Path]) -> tuple[list[MCPConfigServer], list[str]]:
+def load_configs(
+    paths: list[Path],
+    project_root: Path | None = None,
+    all_projects: bool = False,
+    home: Path | None = None,
+) -> tuple[list[MCPConfigServer], list[str]]:
     configs: list[MCPConfigServer] = []
     errors: list[str] = []
     for path in paths:
-        loaded, load_errors = load_mcp_config(path)
+        loaded, load_errors = load_mcp_config(path, project_root=project_root, all_projects=all_projects, home=home)
         configs.extend(loaded)
         errors.extend(load_errors)
     return configs, errors
@@ -131,10 +263,12 @@ def server_row(
 ) -> JsonObject:
     base: JsonObject = {
         "name": config.name,
-        "config_path": str(config.source_path),
+        "config_path": config.source_label,
         "transport": config.transport,
-        "command": command_label(config.command) if config.command else "",
+        "command": command_label(config.display_command) if config.display_command else "",
     }
+    if config.disabled:
+        return {**base, "status": "disabled", "reason": "disabled in config"}
     if config.transport != "stdio":
         return {**base, "status": "skipped", "reason": f"unsupported transport: {config.transport}"}
     if not probe:
@@ -174,14 +308,17 @@ def doctor_report(
     timeout: float = 10.0,
     protocol_version: str = "2025-06-18",
     verbose: bool = False,
+    project_root: Path | None = None,
+    all_projects: bool = False,
+    home: Path | None = None,
 ) -> JsonObject:
-    configs, errors = load_configs(paths)
+    configs, errors = load_configs(paths, project_root=project_root, all_projects=all_projects, home=home)
     rows = [server_row(config, probe, timeout, protocol_version, verbose) for config in configs]
     total_tax = sum(int(row.get("total_tax_tokens", 0)) for row in rows)
     total_index = sum(int(row.get("total_index_tokens", 0)) for row in rows)
     ok_rows = [row for row in rows if row.get("status") == "ok"]
     error_rows = [row for row in rows if row.get("status") == "error"]
-    skipped_rows = [row for row in rows if row.get("status") == "skipped"]
+    skipped_rows = [row for row in rows if row.get("status") in {"skipped", "disabled"}]
     worst = max((int(row.get("worst_tool_tokens", 0)) for row in rows), default=0)
     return {
         "summary": {

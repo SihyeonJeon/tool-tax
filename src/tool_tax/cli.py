@@ -109,7 +109,11 @@ def cmd_proxy(args: argparse.Namespace) -> int:
 
 
 def cmd_doctor(args: argparse.Namespace) -> int:
-    paths = [Path(path).expanduser() for path in args.mcp_config] if args.mcp_config else discover_config_paths(Path.cwd())
+    paths = (
+        [Path(path).expanduser() for path in args.mcp_config]
+        if args.mcp_config
+        else discover_config_paths(Path.cwd(), include_global=args.include_global)
+    )
     if not paths:
         print("ERROR: no MCP config found. Pass --mcp-config PATH.", file=sys.stderr)
         return 1
@@ -119,6 +123,8 @@ def cmd_doctor(args: argparse.Namespace) -> int:
         timeout=args.timeout,
         protocol_version=args.protocol_version,
         verbose=args.verbose,
+        project_root=Path.cwd(),
+        all_projects=args.all_projects,
     )
     output = json.dumps(payload, ensure_ascii=False, indent=2) + "\n" if args.format == "json" else doctor_markdown(payload)
     write_report(output, Path(args.out).resolve() if args.out else None)
@@ -244,6 +250,8 @@ def build_parser() -> argparse.ArgumentParser:
 
     doctor = sub.add_parser("doctor", help="inspect MCP configs and report tool-schema tax")
     doctor.add_argument("--mcp-config", action="append", default=[], help="MCP config JSON path; defaults to common project files")
+    doctor.add_argument("--include-global", action="store_true", help="also inspect common user-level MCP config files")
+    doctor.add_argument("--all-projects", action="store_true", help="include all project entries when reading Claude ~/.claude.json")
     doctor.add_argument("--format", choices=["md", "json"], default="md")
     doctor.add_argument("--out", help="write report to file")
     doctor.add_argument("--no-probe", action="store_true", help="parse configs without executing MCP server commands")

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.7.0
+
+- Added global MCP config discovery for Claude Code, Cursor, VS Code, and Cline.
+- Added Claude `~/.claude.json` project-scope parsing.
+- Added Cursor/VS Code variable expansion for common MCP config placeholders.
+- Skipped disabled MCP servers instead of executing them.
+
 ## 0.6.0
 
 - Added `tool-tax doctor` for MCP config schema-budget reports.

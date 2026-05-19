@@ -17,6 +17,7 @@ helps your host.
 pipx install tool-tax
 
 tool-tax doctor --mcp-config .mcp.json
+tool-tax doctor --include-global --no-probe
 tool-tax mcp -- npx -y @modelcontextprotocol/server-filesystem /tmp
 tool-tax scan examples
 tool-tax diff old-tools.json new-tools.json
@@ -56,7 +57,8 @@ loaded up front, your agent pays a context tax before it starts working.
 ## What It Does
 
 - Finds tool definitions in JSON, YAML, and OpenAPI files.
-- Inspects MCP config files with `mcpServers` entries.
+- Inspects project and user MCP config files for Claude Code, Cursor, VS Code,
+  and Cline.
 - Probes live MCP stdio servers through `initialize` + `tools/list`.
 - Estimates token cost for each tool schema.
 - Ranks the most expensive tools.
@@ -77,7 +79,7 @@ pipx install tool-tax
 From GitHub:
 
 ```bash
-pipx install git+https://github.com/SihyeonJeon/tool-tax.git@v0.6.0
+pipx install git+https://github.com/SihyeonJeon/tool-tax.git@v0.7.0
 ```
 
 From a clone:
@@ -97,6 +99,7 @@ Inspect an MCP config:
 ```bash
 tool-tax doctor --mcp-config .mcp.json
 tool-tax doctor --mcp-config .cursor/mcp.json --format json
+tool-tax doctor --include-global --no-probe
 ```
 
 Scan a repo:
@@ -163,7 +166,7 @@ tool-tax pack openapi.json --operation "PostPayment*" --out .tool-tax-payments
 Use it as a GitHub Action:
 
 ```yaml
-- uses: SihyeonJeon/tool-tax@v0.6.0
+- uses: SihyeonJeon/tool-tax@v0.7.0
   with:
     path: .
     max-tokens: "12000"

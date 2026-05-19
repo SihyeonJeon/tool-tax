@@ -12,6 +12,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from tool_tax.cli import main
+from tool_tax.doctor import discover_config_paths, doctor_report
 
 
 def start_proxy(env: dict[str, str] | None = None, extra_args: list[str] | None = None) -> subprocess.Popen[str]:
@@ -249,6 +250,91 @@ class CliTests(unittest.TestCase):
             self.assertEqual(payload["servers"][0]["status"], "skipped")
             self.assertEqual(payload["servers"][0]["transport"], "remote")
             self.assertEqual(payload["summary"]["skipped_count"], 1)
+
+    def test_doctor_skips_disabled_server(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            config = Path(td) / ".mcp.json"
+            out = Path(td) / "doctor.json"
+            config.write_text(
+                json.dumps({"mcpServers": {"off": {"command": "definitely-not-real", "disabled": True}}}),
+                encoding="utf-8",
+            )
+            code = main(["doctor", "--mcp-config", str(config), "--format", "json", "--out", str(out)])
+            self.assertEqual(code, 0)
+            payload = json.loads(out.read_text(encoding="utf-8"))
+            self.assertEqual(payload["servers"][0]["status"], "disabled")
+            self.assertEqual(payload["summary"]["skipped_count"], 1)
+            self.assertEqual(payload["summary"]["probed_count"], 0)
+
+    def test_doctor_expands_cursor_workspace_folder(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            project = Path(td) / "project"
+            config_dir = project / ".cursor"
+            config_dir.mkdir(parents=True)
+            config = config_dir / "mcp.json"
+            out = Path(td) / "doctor.json"
+            config.write_text(
+                json.dumps(
+                    {
+                        "mcpServers": {
+                            "local": {
+                                "command": sys.executable,
+                                "args": ["${workspaceFolder}/server.py"],
+                            }
+                        }
+                    }
+                ),
+                encoding="utf-8",
+            )
+            code = main(["doctor", "--mcp-config", str(config), "--no-probe", "--format", "json", "--out", str(out)])
+            self.assertEqual(code, 0)
+            payload = json.loads(out.read_text(encoding="utf-8"))
+            self.assertIn(str(project / "server.py"), payload["servers"][0]["command"])
+
+    def test_doctor_reads_claude_json_project_scope(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            project = Path(td) / "project"
+            project.mkdir()
+            config = Path(td) / ".claude.json"
+            config.write_text(
+                json.dumps(
+                    {
+                        "projects": {
+                            str(project): {
+                                "mcpServers": {
+                                    "fixture": {
+                                        "command": sys.executable,
+                                        "args": ["tests/fixtures/mcp_stdio_server.py"],
+                                    }
+                                }
+                            },
+                            str(Path(td) / "other"): {
+                                "mcpServers": {
+                                    "ignored": {
+                                        "command": "definitely-not-real",
+                                    }
+                                }
+                            },
+                        }
+                    }
+                ),
+                encoding="utf-8",
+            )
+            payload = doctor_report([config], probe=False, project_root=project)
+            self.assertEqual(payload["summary"]["server_count"], 1)
+            self.assertEqual(payload["servers"][0]["name"], "fixture")
+            self.assertIn("#projects[", payload["servers"][0]["config_path"])
+
+    def test_doctor_discovers_global_configs_when_requested(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            project = Path(td) / "project"
+            home = Path(td) / "home"
+            project.mkdir()
+            (home / ".cursor").mkdir(parents=True)
+            (home / ".cursor" / "mcp.json").write_text('{"mcpServers": {}}', encoding="utf-8")
+            self.assertEqual(discover_config_paths(project, include_global=False, home=home), [])
+            discovered = discover_config_paths(project, include_global=True, home=home)
+            self.assertEqual(discovered, [home / ".cursor" / "mcp.json"])
 
     def test_mcp_proxy_exposes_three_lazy_tools(self) -> None:
         with tempfile.TemporaryDirectory() as td:

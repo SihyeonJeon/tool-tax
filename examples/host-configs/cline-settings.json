@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "local-server": {
+      "command": "node",
+      "args": ["/path/to/server.js"],
+      "env": {
+        "API_KEY": "${API_KEY:-}"
+      },
+      "alwaysAllow": [],
+      "disabled": false
+    }
+  }
+}
