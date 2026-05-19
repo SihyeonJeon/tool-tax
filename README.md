@@ -25,7 +25,7 @@ Example result:
 Tools: 14
 Full tool tax: 2,102 est. tokens
 Slim index: 647 est. tokens
-Potential savings: 1,455 est. tokens (69.2%)
+Slim-index savings: 1,455 est. tokens (69.2%)
 ```
 
 ## Why
@@ -35,6 +35,18 @@ database tools, and internal APIs all ship long schemas. If every schema is
 loaded up front, your agent pays a context tax before it starts working.
 
 `tool-tax` gives that tax a number.
+
+## Install If
+
+- You use Claude Code, Cursor, or another agent with multiple MCP servers.
+- You expose internal OpenAPI routes or tool catalogs to an agent.
+- You want CI to catch tool-schema bloat before it lands in a pull request.
+
+## Do Not Use If
+
+- You need a provider billing meter. `est. tokens` are local estimates.
+- You need a full MCP gateway for resources, prompts, streamable HTTP, or auth.
+- You are trying to compress normal chat prompts or model responses.
 
 ## What It Does
 
@@ -59,7 +71,7 @@ pipx install tool-tax
 From GitHub:
 
 ```bash
-pipx install git+https://github.com/SihyeonJeon/tool-tax.git@v0.5.0
+pipx install git+https://github.com/SihyeonJeon/tool-tax.git@v0.5.1
 ```
 
 From a clone:
@@ -91,6 +103,7 @@ Run the lazy-schema proxy:
 
 ```bash
 tool-tax proxy -- npx -y @modelcontextprotocol/server-filesystem /tmp
+tool-tax proxy --call-timeout 120 -- npx -y @modelcontextprotocol/server-filesystem /tmp
 ```
 
 Write Markdown and JSON reports:
@@ -137,7 +150,7 @@ tool-tax pack openapi.json --operation "PostPayment*" --out .tool-tax-payments
 Use it as a GitHub Action:
 
 ```yaml
-- uses: SihyeonJeon/tool-tax@v0.5.0
+- uses: SihyeonJeon/tool-tax@v0.5.1
   with:
     path: .
     max-tokens: "12000"
@@ -156,7 +169,7 @@ Grade: **lean**
 | Tools | 7 |
 | Full tool tax | 1,144 est. tokens |
 | Slim index | 309 est. tokens |
-| Potential savings | 835 est. tokens (73.0%) |
+| Slim-index savings | 835 est. tokens (73.0%) |
 | Worst tool | 255 est. tokens |
 ```
 
@@ -173,17 +186,24 @@ Grade: **lean**
 
 ## Benchmarks
 
-| Catalog | Tools | Full tool tax | Slim index | Potential savings |
+These are local estimates for upfront schema text, not provider billing totals.
+See [Estimator](docs/estimator.md) for the method and limits.
+
+| Catalog | Tools | Full tool tax | Slim index | Slim-index savings |
 | --- | ---: | ---: | ---: | ---: |
 | Live MCP Filesystem | 14 | 2,102 | 647 | 69.2% |
-| `tool-tax proxy` for MCP Filesystem | 3 | 260 | 136 | 47.7% |
 | Live MCP Memory | 9 | 1,324 | 340 | 74.3% |
 | Live MCP Sequential Thinking | 1 | 858 | 46 | 94.6% |
 | GitHub REST API | 1,184 | 366,962 | 70,996 | 80.7% |
 | Stripe OpenAPI | 587 | 649,797 | 28,047 | 95.7% |
 
-Direct-vs-proxy upfront schema tax for MCP Filesystem: `2,102 -> 260` estimated
-tokens, or **87.6% less upfront tool schema**.
+Direct-vs-proxy upfront schema tax:
+
+| Upstream MCP server | Direct upfront tax | Proxy upfront tax | Reduction |
+| --- | ---: | ---: | ---: |
+| Filesystem | 2,102 | 260 | 87.6% |
+| Memory | 1,324 | 260 | 80.4% |
+| Sequential Thinking | 858 | 260 | 69.7% |
 
 ## Repo Shape
 
@@ -194,23 +214,27 @@ examples/       # sample MCP/OpenAPI catalogs and reports
 docs/           # trend scan and repo structure notes
 ```
 
-## Claim
+## What It Is Not
 
-This tool does not claim provider bill reduction from the estimator alone. It
-measures the up-front schema tax, creates a smaller index, and includes an
+- Not a provider billing meter.
+- Not prompt compression for normal chat messages.
+- Not a security sandbox for untrusted MCP servers.
+- Not a full MCP gateway.
+
+It measures the up-front schema tax, creates a smaller index, and includes an
 experimental stdio proxy that exposes three wrapper tools so upstream schemas
-can be fetched only when needed.
-
-The proxy is intentionally narrow: stdio, tools/list, and tools/call. It is not
-a full MCP gateway for resources, prompts, streamable HTTP, or auth.
+can be fetched only when needed. The proxy is intentionally narrow: stdio,
+`tools/list`, and `tools/call`.
 
 ## More
 
 - [Roadmap](ROADMAP.md)
+- [Estimator](docs/estimator.md)
+- [Compared](docs/compared.md)
+- [Changelog](CHANGELOG.md)
 - [Public scan gallery](docs/scans/README.md)
 - [Proxy benchmark](docs/proxy-benchmark.md)
 - [PyPI publish notes](docs/pypi-publish.md)
-- [Star forecast and comparison set](docs/star-forecast-2026-05-17.md)
 - [Launch kit](docs/launch-kit.md)
 - [Trend scan](docs/trend-scan-2026-05-17.md)
 - [Repo shape scan](docs/repo-shape-scan.md)

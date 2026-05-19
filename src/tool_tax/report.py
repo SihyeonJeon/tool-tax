@@ -93,7 +93,7 @@ def to_markdown(records: list[ToolRecord], errors: list[str]) -> str:
         f"| Tools | {summary.tool_count} |",
         f"| Full tool tax | {summary.total_tax_tokens:,} est. tokens |",
         f"| Slim index | {summary.total_index_tokens:,} est. tokens |",
-        f"| Potential savings | {summary.estimated_savings_tokens:,} est. tokens ({summary.estimated_savings_percent:.1f}%) |",
+        f"| Slim-index savings | {summary.estimated_savings_tokens:,} est. tokens ({summary.estimated_savings_percent:.1f}%) |",
         f"| Worst tool | {summary.worst_tool_tokens:,} est. tokens |",
         "",
         "## Heaviest Tools",

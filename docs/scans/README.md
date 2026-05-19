@@ -3,7 +3,7 @@
 These reports scan live MCP stdio servers and large public OpenAPI catalogs
 without vendoring third-party source files into this repository.
 
-| Catalog | Source | Tools | Full tool tax | Slim index | Potential savings |
+| Catalog | Source | Tools | Full tool tax | Slim index | Slim-index savings |
 | --- | --- | ---: | ---: | ---: | ---: |
 | MCP Filesystem stdio | https://www.npmjs.com/package/@modelcontextprotocol/server-filesystem | 14 | 2,102 | 647 | 69.2% |
 | MCP Filesystem through `tool-tax proxy` | https://www.npmjs.com/package/@modelcontextprotocol/server-filesystem | 3 | 260 | 136 | 47.7% |

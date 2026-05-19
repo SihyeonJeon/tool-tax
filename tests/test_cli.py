@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
 import tempfile
@@ -8,8 +9,48 @@ import unittest
 from contextlib import redirect_stdout
 from io import StringIO
 from pathlib import Path
+from unittest.mock import patch
 
 from tool_tax.cli import main
+
+
+def start_proxy(env: dict[str, str] | None = None, extra_args: list[str] | None = None) -> subprocess.Popen[str]:
+    process_env = os.environ.copy()
+    if env:
+        process_env.update(env)
+    return subprocess.Popen(
+        [
+            sys.executable,
+            "-m",
+            "tool_tax.mcp_proxy",
+            *(extra_args or []),
+            "--",
+            sys.executable,
+            "tests/fixtures/mcp_stdio_server.py",
+        ],
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        text=True,
+        encoding="utf-8",
+        env=process_env,
+    )
+
+
+def send_proxy(process: subprocess.Popen[str], message: dict) -> dict:
+    if process.stdin is None or process.stdout is None:
+        raise AssertionError("proxy pipes are closed")
+    process.stdin.write(json.dumps(message, separators=(",", ":")) + "\n")
+    process.stdin.flush()
+    return json.loads(process.stdout.readline())
+
+
+def stop_proxy(process: subprocess.Popen[str]) -> None:
+    if process.stdin is not None:
+        process.stdin.close()
+    process.terminate()
+    process.wait(timeout=5)
+    if process.stdout is not None:
+        process.stdout.close()
 
 
 class CliTests(unittest.TestCase):
@@ -136,6 +177,25 @@ class CliTests(unittest.TestCase):
             self.assertEqual(payload["tools"][0]["kind"], "mcp")
             self.assertTrue((pack_out / "tool-index.json").exists())
 
+    def test_mcp_stdio_handles_paginated_tool_list(self) -> None:
+        with tempfile.TemporaryDirectory() as td, patch.dict(os.environ, {"MCP_FIXTURE_PAGED": "1"}):
+            out = Path(td) / "mcp.json"
+            code = main(
+                [
+                    "mcp",
+                    "--format",
+                    "json",
+                    "--out",
+                    str(out),
+                    "--",
+                    sys.executable,
+                    "tests/fixtures/mcp_stdio_server.py",
+                ]
+            )
+            self.assertEqual(code, 0)
+            payload = json.loads(out.read_text(encoding="utf-8"))
+            self.assertEqual(payload["summary"]["tool_count"], 2)
+
     def test_mcp_proxy_exposes_three_lazy_tools(self) -> None:
         with tempfile.TemporaryDirectory() as td:
             out = Path(td) / "proxy.json"
@@ -214,6 +274,86 @@ print(json.dumps({"indexed": indexed, "schema": schema, "called": called}, sort_
             self.assertEqual(index_payload["tool_count"], 2)
             self.assertEqual(schema_payload["name"], "search_docs")
             self.assertEqual(call_payload["called"], "search_docs")
+
+    def test_mcp_proxy_uses_upstream_negotiated_protocol(self) -> None:
+        process = start_proxy({"MCP_FIXTURE_PROTOCOL_VERSION": "2024-11-05"})
+        try:
+            response = send_proxy(
+                process,
+                {
+                    "jsonrpc": "2.0",
+                    "id": 1,
+                    "method": "initialize",
+                    "params": {"protocolVersion": "2025-06-18"},
+                },
+            )
+            self.assertEqual(response["result"]["protocolVersion"], "2024-11-05")
+        finally:
+            stop_proxy(process)
+
+    def test_mcp_proxy_preserves_upstream_error_code_and_data(self) -> None:
+        process = start_proxy()
+        try:
+            send_proxy(
+                process,
+                {
+                    "jsonrpc": "2.0",
+                    "id": 1,
+                    "method": "initialize",
+                    "params": {"protocolVersion": "2025-06-18"},
+                },
+            )
+            response = send_proxy(
+                process,
+                {
+                    "jsonrpc": "2.0",
+                    "id": 2,
+                    "method": "tools/call",
+                    "params": {
+                        "name": "tool_tax_call_tool",
+                        "arguments": {"name": "search_docs", "arguments": {"fail": True}},
+                    },
+                },
+            )
+            self.assertEqual(response["error"]["code"], -32042)
+            self.assertEqual(response["error"]["data"], {"tool": "search_docs"})
+        finally:
+            stop_proxy(process)
+
+    def test_mcp_proxy_invalidates_index_on_list_changed(self) -> None:
+        process = start_proxy({"MCP_FIXTURE_LIST_CHANGED": "1"})
+        try:
+            send_proxy(
+                process,
+                {
+                    "jsonrpc": "2.0",
+                    "id": 1,
+                    "method": "initialize",
+                    "params": {"protocolVersion": "2025-06-18"},
+                },
+            )
+            first = send_proxy(
+                process,
+                {
+                    "jsonrpc": "2.0",
+                    "id": 2,
+                    "method": "tools/call",
+                    "params": {"name": "tool_tax_list_tools", "arguments": {}},
+                },
+            )
+            second = send_proxy(
+                process,
+                {
+                    "jsonrpc": "2.0",
+                    "id": 3,
+                    "method": "tools/call",
+                    "params": {"name": "tool_tax_list_tools", "arguments": {}},
+                },
+            )
+            self.assertEqual(first["result"]["structuredContent"]["tool_count"], 2)
+            self.assertEqual(second["result"]["structuredContent"]["tool_count"], 3)
+        finally:
+            stop_proxy(process)
 
 
 if __name__ == "__main__":

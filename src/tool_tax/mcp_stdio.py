@@ -7,7 +7,7 @@ import subprocess
 import threading
 import time
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 from . import __version__
 from .extract import with_tax
@@ -15,7 +15,10 @@ from .model import ToolRecord
 
 
 class MCPStdioError(RuntimeError):
-    pass
+    def __init__(self, message: str, code: int = -32000, data: Any | None = None) -> None:
+        super().__init__(message)
+        self.code = code
+        self.data = data
 
 
 JsonObject = dict[str, Any]
@@ -70,15 +73,25 @@ def read_json_message(lines: queue.Queue[str | None], deadline: float) -> JsonOb
         return message
 
 
-def read_response(lines: queue.Queue[str | None], request_id: int, deadline: float) -> JsonObject:
+def read_response(
+    lines: queue.Queue[str | None],
+    request_id: int,
+    deadline: float,
+    on_message: Callable[[JsonObject], None] | None = None,
+) -> JsonObject:
     while True:
         message = read_json_message(lines, deadline)
         if message.get("id") != request_id:
+            if on_message is not None:
+                on_message(message)
             continue
         if "error" in message:
             error = message["error"]
             if isinstance(error, dict):
-                raise MCPStdioError(str(error.get("message") or error))
+                code = error.get("code", -32000)
+                if not isinstance(code, int):
+                    code = -32000
+                raise MCPStdioError(str(error.get("message") or error), code=code, data=error.get("data"))
             raise MCPStdioError(str(error))
         result = message.get("result")
         if not isinstance(result, dict):
@@ -113,48 +126,64 @@ class MCPStdioClient:
         self,
         command: list[str],
         timeout: float = 10.0,
+        call_timeout: float = 60.0,
         protocol_version: str = "2025-06-18",
         cwd: Path | None = None,
+        verbose: bool = False,
     ) -> None:
         if not command:
             raise MCPStdioError("missing MCP server command")
         self.command = command
         self.timeout = timeout
+        self.call_timeout = call_timeout
         self.protocol_version = protocol_version
         self.cwd = cwd
+        self.verbose = verbose
         self.process: subprocess.Popen[str] | None = None
         self.lines: queue.Queue[str | None] | None = None
         self.next_id = 1
+        self.initialize_result: JsonObject | None = None
+        self.tool_list_changed = False
 
     @property
     def source(self) -> str:
         return command_label(self.command)
 
-    def start(self) -> None:
+    def start(self) -> JsonObject:
         if self.process is not None:
-            return
+            return self.initialize_result or {}
         self.process = subprocess.Popen(
             self.command,
             cwd=str(self.cwd) if self.cwd else None,
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
-            stderr=subprocess.DEVNULL,
+            stderr=None if self.verbose else subprocess.DEVNULL,
             text=True,
             encoding="utf-8",
             bufsize=1,
         )
         self.lines = start_stdout_reader(self.process)
-        self.request(
-            "initialize",
-            {
-                "protocolVersion": self.protocol_version,
-                "capabilities": {},
-                "clientInfo": {"name": "tool-tax", "version": __version__},
-            },
-        )
-        self.notify("notifications/initialized")
+        try:
+            self.initialize_result = self.request(
+                "initialize",
+                {
+                    "protocolVersion": self.protocol_version,
+                    "capabilities": {},
+                    "clientInfo": {"name": "tool-tax", "version": __version__},
+                },
+                timeout=self.timeout,
+            )
+            self.notify("notifications/initialized")
+        except Exception:
+            self.close()
+            raise
+        return self.initialize_result
 
-    def request(self, method: str, params: JsonObject | None = None) -> JsonObject:
+    def _handle_unsolicited(self, message: JsonObject) -> None:
+        if message.get("method") == "notifications/tools/list_changed":
+            self.tool_list_changed = True
+
+    def request(self, method: str, params: JsonObject | None = None, timeout: float | None = None) -> JsonObject:
         self.start() if self.process is None else None
         if self.process is None or self.lines is None:
             raise MCPStdioError("MCP server did not start")
@@ -164,7 +193,12 @@ class MCPStdioClient:
         if params is not None:
             message["params"] = params
         send_message(self.process, message)
-        return read_response(self.lines, request_id, time.monotonic() + self.timeout)
+        return read_response(
+            self.lines,
+            request_id,
+            time.monotonic() + (self.timeout if timeout is None else timeout),
+            on_message=self._handle_unsolicited,
+        )
 
     def notify(self, method: str, params: JsonObject | None = None) -> None:
         if self.process is None:
@@ -179,9 +213,14 @@ class MCPStdioClient:
     def list_tools(self) -> list[JsonObject]:
         tools: list[JsonObject] = []
         cursor: str | None = None
+        seen_cursors: set[str] = set()
         while True:
+            if cursor:
+                if cursor in seen_cursors:
+                    raise MCPStdioError("MCP tools/list returned a repeated cursor")
+                seen_cursors.add(cursor)
             params = {"cursor": cursor} if cursor else {}
-            result = self.request("tools/list", params)
+            result = self.request("tools/list", params, timeout=self.timeout)
             batch = result.get("tools", [])
             if not isinstance(batch, list):
                 raise MCPStdioError("MCP tools/list result has no tools array")
@@ -195,7 +234,7 @@ class MCPStdioClient:
         params: JsonObject = {"name": name}
         if arguments is not None:
             params["arguments"] = arguments
-        return self.request("tools/call", params)
+        return self.request("tools/call", params, timeout=self.call_timeout)
 
     def close(self) -> None:
         if self.process is not None:
@@ -226,12 +265,21 @@ def tool_record_from_mcp(tool: dict[str, Any], source: str, index: int) -> ToolR
 def list_mcp_stdio_tools(
     command: list[str],
     timeout: float = 10.0,
+    call_timeout: float = 60.0,
     protocol_version: str = "2025-06-18",
     cwd: Path | None = None,
+    verbose: bool = False,
 ) -> tuple[list[ToolRecord], list[str]]:
     if not command:
         raise MCPStdioError("missing MCP server command")
-    client = MCPStdioClient(command, timeout=timeout, protocol_version=protocol_version, cwd=cwd)
+    client = MCPStdioClient(
+        command,
+        timeout=timeout,
+        call_timeout=call_timeout,
+        protocol_version=protocol_version,
+        cwd=cwd,
+        verbose=verbose,
+    )
     source = client.source
     records: list[ToolRecord] = []
     errors: list[str] = []

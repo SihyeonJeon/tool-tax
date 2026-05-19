@@ -2,8 +2,10 @@
 
 ## Next
 
-- Benchmark the proxy on more real MCP servers.
+- End-to-end agent-session benchmark with proxy on/off.
 - Optional exact tokenizers for major providers.
+- Claude Code and Cursor MCP config examples.
+- More proxy scans for real MCP servers, including negative results.
 
 ## Later
 

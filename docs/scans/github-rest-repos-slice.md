@@ -7,7 +7,7 @@ Grade: **brutal**
 | Tools | 492 |
 | Full tool tax | 168,391 est. tokens |
 | Slim index | 28,446 est. tokens |
-| Potential savings | 139,945 est. tokens (83.1%) |
+| Slim-index savings | 139,945 est. tokens (83.1%) |
 | Worst tool | 3,054 est. tokens |
 
 ## Heaviest Tools

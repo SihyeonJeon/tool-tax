@@ -78,7 +78,12 @@ def cmd_mcp(args: argparse.Namespace) -> int:
     if not command:
         print("ERROR: missing MCP server command after --", file=sys.stderr)
         return 1
-    records, errors = list_mcp_stdio_tools(command, timeout=args.timeout, protocol_version=args.protocol_version)
+    records, errors = list_mcp_stdio_tools(
+        command,
+        timeout=args.timeout,
+        protocol_version=args.protocol_version,
+        verbose=args.verbose,
+    )
     payload = to_json(records, errors) if args.format == "json" else to_markdown(records, errors)
     write_report(payload, Path(args.out).resolve() if args.out else None)
     if args.github_step_summary:
@@ -99,7 +104,7 @@ def cmd_proxy(args: argparse.Namespace) -> int:
     if not command:
         print("ERROR: missing upstream MCP server command after --", file=sys.stderr)
         return 1
-    return ToolTaxProxy(command, args.timeout, args.protocol_version).serve()
+    return ToolTaxProxy(command, args.timeout, args.protocol_version, args.call_timeout, args.verbose).serve()
 
 
 def cmd_diff(args: argparse.Namespace) -> int:
@@ -190,6 +195,7 @@ def build_parser() -> argparse.ArgumentParser:
     mcp.add_argument("--pack-out", help="write slim index and schema files from live MCP tools")
     mcp.add_argument("--timeout", type=float, default=10.0, help="seconds to wait for initialize/tools responses")
     mcp.add_argument("--protocol-version", default="2025-06-18", help="MCP protocol version sent at initialize")
+    mcp.add_argument("--verbose", action="store_true", help="let upstream MCP server stderr pass through")
     mcp.add_argument("--max-tokens", type=int, help="fail if total tool tax is above this")
     mcp.add_argument("--max-tool-tokens", type=int, help="fail if any one tool is above this")
     mcp.add_argument("--fail-on-grade", choices=["lean", "warm", "expensive", "brutal"])
@@ -198,8 +204,10 @@ def build_parser() -> argparse.ArgumentParser:
     mcp.set_defaults(func=cmd_mcp)
 
     proxy = sub.add_parser("proxy", help="run a slim-index MCP stdio proxy")
-    proxy.add_argument("--timeout", type=float, default=10.0, help="seconds to wait for upstream MCP responses")
+    proxy.add_argument("--timeout", type=float, default=10.0, help="seconds to wait for upstream initialize/list responses")
+    proxy.add_argument("--call-timeout", type=float, default=60.0, help="seconds to wait for upstream tools/call responses")
     proxy.add_argument("--protocol-version", default="2025-06-18", help="MCP protocol version sent upstream")
+    proxy.add_argument("--verbose", action="store_true", help="let upstream MCP server stderr pass through")
     proxy.add_argument("command", nargs=argparse.REMAINDER, help="upstream MCP server command after --")
     proxy.set_defaults(func=cmd_proxy)
 

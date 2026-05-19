@@ -68,8 +68,21 @@ def error_result(message: str) -> JsonObject:
 
 
 class ToolTaxProxy:
-    def __init__(self, command: list[str], timeout: float, protocol_version: str) -> None:
-        self.client = MCPStdioClient(command, timeout=timeout, protocol_version=protocol_version)
+    def __init__(
+        self,
+        command: list[str],
+        timeout: float,
+        protocol_version: str,
+        call_timeout: float = 60.0,
+        verbose: bool = False,
+    ) -> None:
+        self.client = MCPStdioClient(
+            command,
+            timeout=timeout,
+            call_timeout=call_timeout,
+            protocol_version=protocol_version,
+            verbose=verbose,
+        )
         self.protocol_version = protocol_version
         self.records: list[ToolRecord] | None = None
 
@@ -77,15 +90,22 @@ class ToolTaxProxy:
         self.client.close()
 
     def write(self, message: JsonObject) -> None:
-        print(json.dumps(message, ensure_ascii=False, separators=(",", ":")), flush=True)
+        sys.stdout.write(json.dumps(message, ensure_ascii=False, separators=(",", ":")) + "\n")
+        sys.stdout.flush()
 
     def write_result(self, request_id: Any, result: JsonObject) -> None:
         self.write({"jsonrpc": "2.0", "id": request_id, "result": result})
 
-    def write_error(self, request_id: Any, code: int, message: str) -> None:
-        self.write({"jsonrpc": "2.0", "id": request_id, "error": {"code": code, "message": message}})
+    def write_error(self, request_id: Any, code: int, message: str, data: Any | None = None) -> None:
+        error: JsonObject = {"code": code, "message": message}
+        if data is not None:
+            error["data"] = data
+        self.write({"jsonrpc": "2.0", "id": request_id, "error": error})
 
     def ensure_records(self) -> list[ToolRecord]:
+        if self.client.tool_list_changed:
+            self.records = None
+            self.client.tool_list_changed = False
         if self.records is None:
             self.records = [
                 tool_record_from_mcp(tool, self.client.source, index)
@@ -107,6 +127,8 @@ class ToolTaxProxy:
                     "schema_ref": record.schema_ref,
                     "full_schema_tokens": record.tax_tokens,
                     "index_tokens": record.index_tokens,
+                    "full_schema_est_tokens": record.tax_tokens,
+                    "index_est_tokens": record.index_tokens,
                 }
             )
         return {"tools": tools, "tool_count": len(tools)}
@@ -120,6 +142,8 @@ class ToolTaxProxy:
                     "inputSchema": record.schema,
                     "full_schema_tokens": record.tax_tokens,
                     "index_tokens": record.index_tokens,
+                    "full_schema_est_tokens": record.tax_tokens,
+                    "index_est_tokens": record.index_tokens,
                     "source": record.source_path,
                 }
         return None
@@ -143,8 +167,22 @@ class ToolTaxProxy:
                 return error_result("missing required string argument: name")
             if not isinstance(upstream_args, dict):
                 return error_result("arguments must be an object")
+            if self.schema_for(tool_name) is None:
+                return error_result(f"unknown upstream tool: {tool_name}")
             return self.client.call_tool(tool_name, upstream_args)
-        raise MCPStdioError(f"unknown proxy tool: {name}")
+        raise MCPStdioError(f"unknown proxy tool: {name}", code=-32602)
+
+    def initialize_upstream(self, params: JsonObject) -> JsonObject:
+        requested_version = params.get("protocolVersion")
+        if isinstance(requested_version, str):
+            self.client.protocol_version = requested_version
+        initialize_result = self.client.start()
+        upstream_version = initialize_result.get("protocolVersion")
+        if isinstance(upstream_version, str):
+            self.protocol_version = upstream_version
+        elif isinstance(requested_version, str):
+            self.protocol_version = requested_version
+        return initialize_result
 
     def handle_request(self, message: JsonObject) -> None:
         request_id = message.get("id")
@@ -153,11 +191,15 @@ class ToolTaxProxy:
         if not isinstance(params, dict):
             params = {}
         if method == "initialize":
-            requested_version = params.get("protocolVersion")
+            try:
+                self.initialize_upstream(params)
+            except MCPStdioError as exc:
+                self.write_error(request_id, exc.code, f"upstream initialize failed: {exc}", exc.data)
+                return
             self.write_result(
                 request_id,
                 {
-                    "protocolVersion": str(requested_version or self.protocol_version),
+                    "protocolVersion": self.protocol_version,
                     "capabilities": {"tools": {"listChanged": False}},
                     "serverInfo": {"name": "tool-tax-proxy", "version": __version__},
                 },
@@ -178,7 +220,7 @@ class ToolTaxProxy:
             try:
                 self.write_result(request_id, self.call_proxy_tool(tool_name, arguments))
             except MCPStdioError as exc:
-                self.write_error(request_id, -32602, str(exc))
+                self.write_error(request_id, exc.code, str(exc), exc.data)
             return
         if isinstance(request_id, (int, str)):
             self.write_error(request_id, -32601, f"method not found: {method}")
@@ -202,8 +244,10 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         prog="tool-tax-proxy",
         description="Run an MCP stdio proxy that exposes a slim tool index and lazy schema loading.",
     )
-    parser.add_argument("--timeout", type=float, default=10.0, help="seconds to wait for upstream MCP responses")
+    parser.add_argument("--timeout", type=float, default=10.0, help="seconds to wait for upstream initialize/list responses")
+    parser.add_argument("--call-timeout", type=float, default=60.0, help="seconds to wait for upstream tools/call responses")
     parser.add_argument("--protocol-version", default="2025-06-18", help="MCP protocol version sent upstream")
+    parser.add_argument("--verbose", action="store_true", help="let upstream MCP server stderr pass through")
     parser.add_argument("command", nargs=argparse.REMAINDER, help="upstream MCP server command after --")
     args = parser.parse_args(argv)
     if args.command and args.command[0] == "--":
@@ -215,7 +259,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
-    return ToolTaxProxy(args.command, args.timeout, args.protocol_version).serve()
+    return ToolTaxProxy(args.command, args.timeout, args.protocol_version, args.call_timeout, args.verbose).serve()
 
 
 if __name__ == "__main__":

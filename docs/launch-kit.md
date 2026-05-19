@@ -25,7 +25,7 @@ tool-tax pack examples --out .tool-tax
 Tools: 7
 Full tool tax: 1,144 est. tokens
 Slim index: 309 est. tokens
-Potential savings: 835 est. tokens (73.0%)
+Slim-index savings: 835 est. tokens (73.0%)
 ```
 
 ## Short Post
