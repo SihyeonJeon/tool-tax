@@ -6,10 +6,10 @@ https://pypi.org/project/tool-tax/
 ## Current Package State
 
 - PyPI package: https://pypi.org/project/tool-tax/
-- Version: `0.2.1`
+- Version: `0.3.0`
 - Build: `python -m build` passes.
 - Metadata: `twine check dist/*` passes.
-- Release assets: https://github.com/SihyeonJeon/tool-tax/releases/tag/v0.2.1
+- Release assets: https://github.com/SihyeonJeon/tool-tax/releases/tag/v0.3.0
 - GitHub environment `pypi` exists.
 - Manual `publish-pypi` workflow run succeeded:
   https://github.com/SihyeonJeon/tool-tax/actions/runs/26080495739
@@ -61,5 +61,5 @@ pipx install tool-tax
 Keep the GitHub install command as a fallback:
 
 ```bash
-pipx install git+https://github.com/SihyeonJeon/tool-tax.git@v0.2.1
+pipx install git+https://github.com/SihyeonJeon/tool-tax.git@v0.3.0
 ```

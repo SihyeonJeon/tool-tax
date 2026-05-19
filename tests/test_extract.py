@@ -5,7 +5,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from tool_tax.extract import extract_tools
+from tool_tax.extract import ExtractOptions, extract_tools
 from tool_tax.report import summarize, to_json
 
 
@@ -58,6 +58,46 @@ class ExtractTests(unittest.TestCase):
         self.assertEqual(len(records), 1)
         self.assertEqual(records[0].kind, "openapi")
         self.assertEqual(records[0].name, "create_item")
+
+    def test_slices_openapi_by_tag_path_and_operation(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            path = Path(td) / "openapi.json"
+            path.write_text(
+                json.dumps(
+                    {
+                        "openapi": "3.1.0",
+                        "paths": {
+                            "/runs": {
+                                "post": {
+                                    "operationId": "create_run",
+                                    "tags": ["runs"],
+                                    "summary": "Create run",
+                                    "parameters": [],
+                                }
+                            },
+                            "/users": {
+                                "get": {
+                                    "operationId": "list_users",
+                                    "tags": ["users"],
+                                    "summary": "List users",
+                                    "parameters": [],
+                                }
+                            },
+                        },
+                    }
+                ),
+                encoding="utf-8",
+            )
+            tag_records, tag_errors = extract_tools([path], ExtractOptions(openapi_tags=("runs",)))
+            path_records, path_errors = extract_tools([path], ExtractOptions(openapi_paths=("/user",)))
+            op_records, op_errors = extract_tools([path], ExtractOptions(openapi_operations=("create_*",)))
+
+        self.assertEqual(tag_errors, [])
+        self.assertEqual(path_errors, [])
+        self.assertEqual(op_errors, [])
+        self.assertEqual([record.name for record in tag_records], ["create_run"])
+        self.assertEqual([record.name for record in path_records], ["list_users"])
+        self.assertEqual([record.name for record in op_records], ["create_run"])
 
     def test_extracts_yaml_tool_manifest(self) -> None:
         records, errors = extract_tools([Path("examples/mcp-tools.yml")])

@@ -90,6 +90,26 @@ class CliTests(unittest.TestCase):
             self.assertEqual(payload["repo"], "owner/repo")
             self.assertEqual(payload["pr"], 7)
 
+    def test_scan_openapi_slice_by_operation(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            out = Path(td) / "slice.json"
+            code = main(
+                [
+                    "scan",
+                    "examples/openapi.json",
+                    "--operation",
+                    "create_*",
+                    "--format",
+                    "json",
+                    "--out",
+                    str(out),
+                ]
+            )
+            self.assertEqual(code, 0)
+            payload = json.loads(out.read_text(encoding="utf-8"))
+            self.assertEqual(payload["summary"]["tool_count"], 1)
+            self.assertEqual(payload["tools"][0]["name"], "create_run")
+
 
 if __name__ == "__main__":
     unittest.main()

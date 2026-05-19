@@ -106,10 +106,18 @@ Compare a pull request:
 tool-tax diff base-tools.json head-tools.json --max-delta-tokens 500
 ```
 
+Slice a large OpenAPI file before scanning or packing:
+
+```bash
+tool-tax scan openapi.json --tag payments
+tool-tax scan openapi.json --path /v1/payment_intents
+tool-tax pack openapi.json --operation "PostPayment*" --out .tool-tax-payments
+```
+
 Use it as a GitHub Action:
 
 ```yaml
-- uses: SihyeonJeon/tool-tax@v0.2.1
+- uses: SihyeonJeon/tool-tax@v0.3.0
   with:
     path: .
     max-tokens: "12000"
@@ -137,6 +145,7 @@ Grade: **lean**
 - MCP-style JSON/YAML tool arrays
 - Agent tool manifests with `name`, `description`, and `inputSchema`
 - OpenAPI `paths` operations
+- OpenAPI slicing by `--tag`, `--path`, and `--operation`
 - Nested JSON catalogs
 - GitHub Step Summary and PR comment reports
 

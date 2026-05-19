@@ -8,13 +8,27 @@ from pathlib import Path
 
 from . import __version__
 from .diff import dump_diff_json, to_diff_json, to_diff_markdown
-from .extract import extract_tools
+from .extract import ExtractOptions, extract_tools
 from .github_comment import DEFAULT_MARKER, resolve_pr_number, upsert_pr_comment
 from .report import summarize, to_json, to_markdown, write_pack, write_report
 
 
 def parse_paths(values: list[str]) -> list[Path]:
     return [Path(value) for value in values]
+
+
+def extract_options(args: argparse.Namespace) -> ExtractOptions:
+    return ExtractOptions(
+        openapi_tags=tuple(args.tag or ()),
+        openapi_paths=tuple(args.path or ()),
+        openapi_operations=tuple(args.operation or ()),
+    )
+
+
+def add_openapi_slice_options(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument("--tag", action="append", help="only include OpenAPI operations with this tag")
+    parser.add_argument("--path", action="append", help="only include OpenAPI paths matching this prefix or glob")
+    parser.add_argument("--operation", action="append", help="only include OpenAPI operationId matching this prefix or glob")
 
 
 def append_step_summary(markdown: str) -> None:
@@ -27,7 +41,7 @@ def append_step_summary(markdown: str) -> None:
 
 
 def cmd_scan(args: argparse.Namespace) -> int:
-    records, errors = extract_tools(parse_paths(args.paths))
+    records, errors = extract_tools(parse_paths(args.paths), extract_options(args))
     payload = to_json(records, errors) if args.format == "json" else to_markdown(records, errors)
     write_report(payload, Path(args.out).resolve() if args.out else None)
     if args.github_step_summary:
@@ -45,8 +59,9 @@ def cmd_scan(args: argparse.Namespace) -> int:
 
 
 def cmd_diff(args: argparse.Namespace) -> int:
-    base_records, base_errors = extract_tools([Path(args.base)])
-    head_records, head_errors = extract_tools([Path(args.head)])
+    options = extract_options(args)
+    base_records, base_errors = extract_tools([Path(args.base)], options)
+    head_records, head_errors = extract_tools([Path(args.head)], options)
     errors = [f"base: {error}" for error in base_errors] + [f"head: {error}" for error in head_errors]
     if args.format == "json":
         payload = to_diff_json(base_records, head_records, errors)
@@ -68,7 +83,7 @@ def cmd_diff(args: argparse.Namespace) -> int:
 
 
 def cmd_pack(args: argparse.Namespace) -> int:
-    records, errors = extract_tools(parse_paths(args.paths))
+    records, errors = extract_tools(parse_paths(args.paths), extract_options(args))
     if errors and not args.ignore_errors:
         for error in errors:
             print(f"ERROR: {error}", file=sys.stderr)
@@ -122,6 +137,7 @@ def build_parser() -> argparse.ArgumentParser:
     scan.add_argument("--max-tool-tokens", type=int, help="fail if any one tool is above this")
     scan.add_argument("--fail-on-grade", choices=["lean", "warm", "expensive", "brutal"])
     scan.add_argument("--github-step-summary", action="store_true", help="append Markdown report to GitHub step summary")
+    add_openapi_slice_options(scan)
     scan.set_defaults(func=cmd_scan)
 
     diff = sub.add_parser("diff", help="compare base and head tool catalogs")
@@ -133,12 +149,14 @@ def build_parser() -> argparse.ArgumentParser:
     diff.add_argument("--max-delta-tokens", type=int, help="fail if total token delta exceeds this")
     diff.add_argument("--max-tool-delta-tokens", type=int, help="fail if one tool grows more than this")
     diff.add_argument("--github-step-summary", action="store_true", help="append Markdown diff to GitHub step summary")
+    add_openapi_slice_options(diff)
     diff.set_defaults(func=cmd_diff)
 
     pack = sub.add_parser("pack", help="write slim tool index and schema files")
     pack.add_argument("paths", nargs="+", help="files or directories to scan")
     pack.add_argument("--out", required=True, help="output directory")
     pack.add_argument("--ignore-errors", action="store_true")
+    add_openapi_slice_options(pack)
     pack.set_defaults(func=cmd_pack)
 
     comment = sub.add_parser("comment-pr", help="create or update a GitHub PR comment from a report")

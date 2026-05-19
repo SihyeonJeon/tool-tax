@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+from dataclasses import dataclass
+from fnmatch import fnmatch
 from pathlib import Path
 from typing import Any, Iterable
 
@@ -20,6 +22,17 @@ SCHEMA_KEYS = {
 }
 
 METHODS = {"get", "put", "post", "delete", "patch", "options", "head"}
+
+
+@dataclass(frozen=True)
+class ExtractOptions:
+    openapi_tags: tuple[str, ...] = ()
+    openapi_paths: tuple[str, ...] = ()
+    openapi_operations: tuple[str, ...] = ()
+
+    @property
+    def has_openapi_filters(self) -> bool:
+        return bool(self.openapi_tags or self.openapi_paths or self.openapi_operations)
 
 
 def compact_json(value: Any) -> str:
@@ -95,7 +108,38 @@ def record_from_tool_like(obj: dict[str, Any], source: Path, pointer: str) -> To
     )
 
 
-def extract_openapi(data: dict[str, Any], source: Path) -> list[ToolRecord]:
+def matches_text(value: str, patterns: tuple[str, ...]) -> bool:
+    if not patterns:
+        return True
+    for pattern in patterns:
+        if any(ch in pattern for ch in "*?[]"):
+            if fnmatch(value, pattern):
+                return True
+        elif value == pattern or value.startswith(pattern):
+            return True
+    return False
+
+
+def matches_tags(op: dict[str, Any], tags: tuple[str, ...]) -> bool:
+    if not tags:
+        return True
+    op_tags = op.get("tags", [])
+    if not isinstance(op_tags, list):
+        return False
+    return any(str(tag) in tags for tag in op_tags)
+
+
+def matches_openapi_operation(path_name: str, op: dict[str, Any], options: ExtractOptions) -> bool:
+    operation_id = str(op.get("operationId") or "")
+    return (
+        matches_tags(op, options.openapi_tags)
+        and matches_text(path_name, options.openapi_paths)
+        and matches_text(operation_id, options.openapi_operations)
+    )
+
+
+def extract_openapi(data: dict[str, Any], source: Path, options: ExtractOptions | None = None) -> list[ToolRecord]:
+    options = options or ExtractOptions()
     paths = data.get("paths")
     if not isinstance(paths, dict):
         return []
@@ -105,6 +149,8 @@ def extract_openapi(data: dict[str, Any], source: Path) -> list[ToolRecord]:
             continue
         for method, op in path_item.items():
             if method.lower() not in METHODS or not isinstance(op, dict):
+                continue
+            if not matches_openapi_operation(path_name, op, options):
                 continue
             name = str(op.get("operationId") or f"{method}_{path_name}".strip("/").replace("/", "_") or method)
             desc = str(op.get("description") or op.get("summary") or "")
@@ -161,7 +207,8 @@ def candidate_files(paths: list[Path]) -> list[Path]:
     return sorted(set(files))
 
 
-def extract_tools(paths: list[Path]) -> tuple[list[ToolRecord], list[str]]:
+def extract_tools(paths: list[Path], options: ExtractOptions | None = None) -> tuple[list[ToolRecord], list[str]]:
+    options = options or ExtractOptions()
     records: list[ToolRecord] = []
     errors: list[str] = []
     for path in candidate_files(paths):
@@ -171,9 +218,13 @@ def extract_tools(paths: list[Path]) -> tuple[list[ToolRecord], list[str]]:
             errors.append(f"{path}: {exc}")
             continue
         if isinstance(data, dict):
-            openapi_records = extract_openapi(data, path)
+            openapi_records = extract_openapi(data, path, options)
             if openapi_records:
                 records.extend(openapi_records)
+                continue
+            if options.has_openapi_filters and "openapi" in data and isinstance(data.get("paths"), dict):
+                continue
+            if options.has_openapi_filters:
                 continue
         records.extend(walk_data(data, path))
     seen: set[tuple[str, str, str]] = set()

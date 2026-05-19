@@ -7,7 +7,6 @@
 ## Later
 
 - Optional exact tokenizers for major providers.
-- OpenAPI slicing by tag, path, or operation group.
 - MCP proxy adapter that serves `tool-index.json` first and schema on demand.
 
 ## Done
@@ -18,6 +17,7 @@
 - Public scan gallery from large OpenAPI catalogs: [#5](https://github.com/SihyeonJeon/tool-tax/issues/5)
 - PyPI release workflow and publish notes.
 - PyPI release: [#2](https://github.com/SihyeonJeon/tool-tax/issues/2)
+- OpenAPI slicing by tag, path, or operation group.
 
 ## Not Now
 

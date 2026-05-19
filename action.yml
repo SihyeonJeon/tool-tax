@@ -25,6 +25,15 @@ inputs:
   fail-on-increase:
     description: Fail diff whenever total tool tax increases.
     default: "false"
+  tag:
+    description: Optional OpenAPI tag slice.
+    default: ""
+  path-slice:
+    description: Optional OpenAPI path prefix or glob slice.
+    default: ""
+  operation:
+    description: Optional OpenAPI operationId prefix or glob slice.
+    default: ""
   comment-pr:
     description: "Create or update a tool-tax PR comment. Requires pull-requests: write."
     default: "false"
@@ -63,6 +72,15 @@ runs:
           if [ -n "${{ inputs.max-tool-tokens }}" ]; then
             args+=(--max-tool-tokens "${{ inputs.max-tool-tokens }}")
           fi
+        fi
+        if [ -n "${{ inputs.tag }}" ]; then
+          args+=(--tag "${{ inputs.tag }}")
+        fi
+        if [ -n "${{ inputs['path-slice'] }}" ]; then
+          args+=(--path "${{ inputs['path-slice'] }}")
+        fi
+        if [ -n "${{ inputs.operation }}" ]; then
+          args+=(--operation "${{ inputs.operation }}")
         fi
         set +e
         tool-tax "${args[@]}"
