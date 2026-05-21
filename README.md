@@ -78,7 +78,7 @@ pipx install tool-tax
 From GitHub:
 
 ```bash
-pipx install git+https://github.com/SihyeonJeon/tool-tax.git@v0.7.0
+pipx install git+https://github.com/SihyeonJeon/tool-tax.git@v0.7.1
 ```
 
 From a clone:
@@ -165,7 +165,7 @@ tool-tax pack openapi.json --operation "PostPayment*" --out .tool-tax-payments
 Use it as a GitHub Action:
 
 ```yaml
-- uses: SihyeonJeon/tool-tax@v0.7.0
+- uses: SihyeonJeon/tool-tax@v0.7.1
   with:
     path: .
     max-tokens: "12000"
@@ -235,7 +235,7 @@ Host-level benchmarks:
 src/tool_tax/   # library + CLI
 tests/          # unittest smoke coverage
 examples/       # sample MCP/OpenAPI catalogs and reports
-docs/           # trend scan and repo structure notes
+docs/           # usage docs, benchmarks, and public scan reports
 ```
 
 ## What It Is Not
@@ -264,11 +264,6 @@ intentionally narrow: stdio, `tools/list`, and `tools/call`.
 - [Claude Code E2E benchmark](docs/claude-code-e2e-benchmark.md)
 - [Public scan gallery](docs/scans/README.md)
 - [Proxy benchmark](docs/proxy-benchmark.md)
-- [PyPI publish notes](docs/pypi-publish.md)
-- [Launch kit](docs/launch-kit.md)
-- [Outreach](docs/outreach.md)
-- [Trend scan](docs/trend-scan-2026-05-17.md)
-- [Repo shape scan](docs/repo-shape-scan.md)
 
 ## License
 

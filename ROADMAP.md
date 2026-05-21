@@ -17,7 +17,7 @@
 - `tool-tax diff base.json head.json` for PR comments: [#1](https://github.com/SihyeonJeon/tool-tax/issues/1)
 - GitHub Action with step summary and optional PR comment: [#3](https://github.com/SihyeonJeon/tool-tax/issues/3)
 - Public scan gallery from large OpenAPI catalogs: [#5](https://github.com/SihyeonJeon/tool-tax/issues/5)
-- PyPI release workflow and publish notes.
+- PyPI release workflow.
 - PyPI release: [#2](https://github.com/SihyeonJeon/tool-tax/issues/2)
 - OpenAPI slicing by tag, path, or operation group.
 - Live MCP stdio probing through `initialize` and `tools/list`.

@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.7.1
+
+- Removed internal planning, publication, and release-operations notes from the
+  public docs.
+- Kept public docs focused on usage, estimator limits, host behavior,
+  reproducible benchmarks, and scan reports.
+- Trimmed README links to user-facing documentation only.
+
 ## 0.7.0
 
 - Added global MCP config discovery for Claude Code, Cursor, VS Code, and Cline.
