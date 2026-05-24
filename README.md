@@ -78,7 +78,7 @@ pipx install tool-tax
 From GitHub:
 
 ```bash
-pipx install git+https://github.com/SihyeonJeon/tool-tax.git@v0.7.1
+pipx install git+https://github.com/SihyeonJeon/tool-tax.git@v0.8.0
 ```
 
 From a clone:
@@ -165,11 +165,18 @@ tool-tax pack openapi.json --operation "PostPayment*" --out .tool-tax-payments
 Use it as a GitHub Action:
 
 ```yaml
-- uses: SihyeonJeon/tool-tax@v0.7.1
+- uses: SihyeonJeon/tool-tax@v0.8.0
   with:
     path: .
     max-tokens: "12000"
     max-tool-tokens: "750"
+```
+
+Summarize multiple public scans:
+
+```bash
+tool-tax benchmark docs/benchmarks/public-catalogs.yml
+tool-tax benchmark docs/benchmarks/public-catalogs.yml --format json --out public-catalogs.json
 ```
 
 ## Output
@@ -204,6 +211,11 @@ Grade: **lean**
 
 These are local estimates for upfront schema text, not provider billing totals.
 See [Estimator](docs/estimator.md) for the method and limits.
+
+Public catalog benchmark:
+[10 catalogs, 3,429 tools, 1,442,056 estimated schema tokens](docs/benchmarks/public-catalogs-2026-05-25.md).
+The benchmark corpus drops to a 169,423-token slim index before exact schemas
+are fetched.
 
 | Catalog | Tools | Full tool tax | Slim index | Slim-index savings |
 | --- | ---: | ---: | ---: | ---: |

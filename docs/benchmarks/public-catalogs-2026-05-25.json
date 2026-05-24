@@ -1,0 +1,190 @@
+{
+  "metadata": {
+    "name": "public-catalogs-2026-05-25",
+    "date": "2026-05-25",
+    "evidence_grade": "public_catalog_scan",
+    "claim_allowed": false,
+    "scope_note": "Public MCP/OpenAPI catalog scan benchmark; local estimator only, not provider billing or runtime savings",
+    "manifest": "docs/benchmarks/public-catalogs.yml"
+  },
+  "summary": {
+    "catalog_count": 10,
+    "tool_count": 3429,
+    "total_tax_tokens": 1442056,
+    "total_index_tokens": 169423,
+    "estimated_savings_tokens": 1272633,
+    "estimated_savings_percent": 88.25128843817438,
+    "brutal_catalog_count": 4,
+    "heaviest_catalog": "Stripe OpenAPI",
+    "heaviest_catalog_tokens": 649797,
+    "worst_tool_catalog": "Stripe OpenAPI",
+    "worst_tool_tokens": 18712
+  },
+  "catalogs": [
+    {
+      "name": "MCP Filesystem stdio",
+      "kind": "mcp",
+      "source": "https://www.npmjs.com/package/@modelcontextprotocol/server-filesystem",
+      "report": "../scans/mcp-filesystem-stdio.md",
+      "proxy_for": null,
+      "tool_count": 14,
+      "total_tax_tokens": 2102,
+      "total_index_tokens": 647,
+      "estimated_savings_tokens": 1455,
+      "estimated_savings_percent": 69.2,
+      "worst_tool_tokens": 242,
+      "grade": "lean"
+    },
+    {
+      "name": "MCP Filesystem proxy",
+      "kind": "mcp-proxy",
+      "source": "https://www.npmjs.com/package/@modelcontextprotocol/server-filesystem",
+      "report": "../scans/mcp-filesystem-proxy.md",
+      "proxy_for": "MCP Filesystem stdio",
+      "tool_count": 3,
+      "total_tax_tokens": 260,
+      "total_index_tokens": 136,
+      "estimated_savings_tokens": 124,
+      "estimated_savings_percent": 47.7,
+      "worst_tool_tokens": 103,
+      "grade": "lean"
+    },
+    {
+      "name": "MCP Memory stdio",
+      "kind": "mcp",
+      "source": "https://www.npmjs.com/package/@modelcontextprotocol/server-memory",
+      "report": "../scans/mcp-memory-stdio.md",
+      "proxy_for": null,
+      "tool_count": 9,
+      "total_tax_tokens": 1324,
+      "total_index_tokens": 340,
+      "estimated_savings_tokens": 984,
+      "estimated_savings_percent": 74.3,
+      "worst_tool_tokens": 208,
+      "grade": "lean"
+    },
+    {
+      "name": "MCP Sequential Thinking stdio",
+      "kind": "mcp",
+      "source": "https://www.npmjs.com/package/@modelcontextprotocol/server-sequential-thinking",
+      "report": "../scans/mcp-sequential-thinking-stdio.md",
+      "proxy_for": null,
+      "tool_count": 1,
+      "total_tax_tokens": 858,
+      "total_index_tokens": 46,
+      "estimated_savings_tokens": 812,
+      "estimated_savings_percent": 94.6,
+      "worst_tool_tokens": 858,
+      "grade": "lean"
+    },
+    {
+      "name": "MCP Sequential Thinking proxy",
+      "kind": "mcp-proxy",
+      "source": "https://www.npmjs.com/package/@modelcontextprotocol/server-sequential-thinking",
+      "report": "../scans/mcp-sequential-thinking-proxy.md",
+      "proxy_for": "MCP Sequential Thinking stdio",
+      "tool_count": 3,
+      "total_tax_tokens": 260,
+      "total_index_tokens": 136,
+      "estimated_savings_tokens": 124,
+      "estimated_savings_percent": 47.7,
+      "worst_tool_tokens": 103,
+      "grade": "lean"
+    },
+    {
+      "name": "MCP Everything stdio",
+      "kind": "mcp",
+      "source": "https://www.npmjs.com/package/@modelcontextprotocol/server-everything",
+      "report": "../scans/mcp-everything-stdio.md",
+      "proxy_for": null,
+      "tool_count": 13,
+      "total_tax_tokens": 1499,
+      "total_index_tokens": 598,
+      "estimated_savings_tokens": 901,
+      "estimated_savings_percent": 60.1,
+      "worst_tool_tokens": 278,
+      "grade": "lean"
+    },
+    {
+      "name": "GitHub REST API",
+      "kind": "openapi",
+      "source": "https://github.com/github/rest-api-description",
+      "report": "../scans/github-rest-api.md",
+      "proxy_for": null,
+      "tool_count": 1184,
+      "total_tax_tokens": 366962,
+      "total_index_tokens": 70996,
+      "estimated_savings_tokens": 295966,
+      "estimated_savings_percent": 80.7,
+      "worst_tool_tokens": 3054,
+      "grade": "brutal"
+    },
+    {
+      "name": "GitHub REST API /repos/ slice",
+      "kind": "openapi-slice",
+      "source": "https://github.com/github/rest-api-description",
+      "report": "../scans/github-rest-repos-slice.md",
+      "proxy_for": null,
+      "tool_count": 492,
+      "total_tax_tokens": 168391,
+      "total_index_tokens": 28446,
+      "estimated_savings_tokens": 139945,
+      "estimated_savings_percent": 83.1,
+      "worst_tool_tokens": 3054,
+      "grade": "brutal"
+    },
+    {
+      "name": "Stripe OpenAPI",
+      "kind": "openapi",
+      "source": "https://github.com/stripe/openapi",
+      "report": "../scans/stripe-openapi.md",
+      "proxy_for": null,
+      "tool_count": 587,
+      "total_tax_tokens": 649797,
+      "total_index_tokens": 28047,
+      "estimated_savings_tokens": 621750,
+      "estimated_savings_percent": 95.7,
+      "worst_tool_tokens": 18712,
+      "grade": "brutal"
+    },
+    {
+      "name": "Kubernetes OpenAPI",
+      "kind": "openapi",
+      "source": "https://github.com/kubernetes/kubernetes",
+      "report": "../scans/kubernetes-openapi.md",
+      "proxy_for": null,
+      "tool_count": 1123,
+      "total_tax_tokens": 250603,
+      "total_index_tokens": 40031,
+      "estimated_savings_tokens": 210572,
+      "estimated_savings_percent": 84.0,
+      "worst_tool_tokens": 436,
+      "grade": "brutal"
+    }
+  ],
+  "proxy_pairs": [
+    {
+      "direct": "MCP Filesystem stdio",
+      "proxy": "MCP Filesystem proxy",
+      "direct_tax_tokens": 2102,
+      "proxy_tax_tokens": 260,
+      "reduction_tokens": 1842,
+      "reduction_percent": 87.63082778306375
+    },
+    {
+      "direct": "MCP Sequential Thinking stdio",
+      "proxy": "MCP Sequential Thinking proxy",
+      "direct_tax_tokens": 858,
+      "proxy_tax_tokens": 260,
+      "reduction_tokens": 598,
+      "reduction_percent": 69.6969696969697
+    }
+  ],
+  "insights": [
+    "10 catalogs expose 3,429 tools and 1,442,056 estimated schema tokens.",
+    "A slim index would reduce the benchmark corpus by 88.3% before exact schemas are fetched.",
+    "Stripe OpenAPI is the heaviest catalog in this benchmark.",
+    "4 catalogs are graded brutal; these need slicing, lazy loading, or CI budgets.",
+    "The largest single-tool schema appears in Stripe OpenAPI at 18,712 estimated tokens."
+  ]
+}

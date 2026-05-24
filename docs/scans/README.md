@@ -3,6 +3,15 @@
 These reports scan live MCP stdio servers and large public OpenAPI catalogs
 without vendoring third-party source files into this repository.
 
+Aggregate benchmark:
+[10 catalogs, 3,429 tools, 1,442,056 estimated schema tokens](../benchmarks/public-catalogs-2026-05-25.md).
+Regenerate it with:
+
+```bash
+tool-tax benchmark docs/benchmarks/public-catalogs.yml --out docs/benchmarks/public-catalogs-2026-05-25.md
+tool-tax benchmark docs/benchmarks/public-catalogs.yml --format json --out docs/benchmarks/public-catalogs-2026-05-25.json
+```
+
 | Catalog | Source | Tools | Full tool tax | Slim index | Slim-index savings |
 | --- | --- | ---: | ---: | ---: | ---: |
 | MCP Filesystem stdio | https://www.npmjs.com/package/@modelcontextprotocol/server-filesystem | 14 | 2,102 | 647 | 69.2% |

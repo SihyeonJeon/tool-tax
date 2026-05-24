@@ -1,0 +1,46 @@
+name: public-catalogs-2026-05-25
+date: "2026-05-25"
+scope_note: Public MCP/OpenAPI catalog scan benchmark; local estimator only, not provider billing or runtime savings
+catalogs:
+  - name: MCP Filesystem stdio
+    kind: mcp
+    source: https://www.npmjs.com/package/@modelcontextprotocol/server-filesystem
+    report: ../scans/mcp-filesystem-stdio.md
+  - name: MCP Filesystem proxy
+    kind: mcp-proxy
+    source: https://www.npmjs.com/package/@modelcontextprotocol/server-filesystem
+    report: ../scans/mcp-filesystem-proxy.md
+    proxy_for: MCP Filesystem stdio
+  - name: MCP Memory stdio
+    kind: mcp
+    source: https://www.npmjs.com/package/@modelcontextprotocol/server-memory
+    report: ../scans/mcp-memory-stdio.md
+  - name: MCP Sequential Thinking stdio
+    kind: mcp
+    source: https://www.npmjs.com/package/@modelcontextprotocol/server-sequential-thinking
+    report: ../scans/mcp-sequential-thinking-stdio.md
+  - name: MCP Sequential Thinking proxy
+    kind: mcp-proxy
+    source: https://www.npmjs.com/package/@modelcontextprotocol/server-sequential-thinking
+    report: ../scans/mcp-sequential-thinking-proxy.md
+    proxy_for: MCP Sequential Thinking stdio
+  - name: MCP Everything stdio
+    kind: mcp
+    source: https://www.npmjs.com/package/@modelcontextprotocol/server-everything
+    report: ../scans/mcp-everything-stdio.md
+  - name: GitHub REST API
+    kind: openapi
+    source: https://github.com/github/rest-api-description
+    report: ../scans/github-rest-api.md
+  - name: GitHub REST API /repos/ slice
+    kind: openapi-slice
+    source: https://github.com/github/rest-api-description
+    report: ../scans/github-rest-repos-slice.md
+  - name: Stripe OpenAPI
+    kind: openapi
+    source: https://github.com/stripe/openapi
+    report: ../scans/stripe-openapi.md
+  - name: Kubernetes OpenAPI
+    kind: openapi
+    source: https://github.com/kubernetes/kubernetes
+    report: ../scans/kubernetes-openapi.md

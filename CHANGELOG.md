@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.8.0
+
+- Added `tool-tax benchmark` for summarizing multiple scan reports from a
+  YAML/JSON manifest.
+- Added a public MCP/OpenAPI catalog benchmark covering 10 catalogs and 3,429
+  tools.
+- Added machine-readable JSON and Markdown benchmark outputs for public scan
+  comparisons.
+
 ## 0.7.1
 
 - Removed internal planning, publication, and release-operations notes from the

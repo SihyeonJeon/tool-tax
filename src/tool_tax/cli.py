@@ -7,6 +7,7 @@ import sys
 from pathlib import Path
 
 from . import __version__
+from .benchmark import benchmark_to_json, benchmark_to_markdown, build_benchmark
 from .diff import dump_diff_json, to_diff_json, to_diff_markdown
 from .doctor import discover_config_paths, doctor_markdown, doctor_report
 from .extract import ExtractOptions, extract_tools
@@ -207,6 +208,13 @@ def cmd_comment_pr(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_benchmark(args: argparse.Namespace) -> int:
+    payload = build_benchmark(Path(args.manifest))
+    output = benchmark_to_json(payload) if args.format == "json" else benchmark_to_markdown(payload)
+    write_report(output, Path(args.out).resolve() if args.out else None)
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="tool-tax",
@@ -291,6 +299,12 @@ def build_parser() -> argparse.ArgumentParser:
     comment.add_argument("--marker", default=DEFAULT_MARKER, help="hidden marker for updating an existing comment")
     comment.add_argument("--dry-run", action="store_true", help="print resolved comment payload without calling GitHub")
     comment.set_defaults(func=cmd_comment_pr)
+
+    benchmark = sub.add_parser("benchmark", help="summarize multiple scan reports from a manifest")
+    benchmark.add_argument("manifest", help="YAML or JSON benchmark manifest")
+    benchmark.add_argument("--format", choices=["md", "json"], default="md")
+    benchmark.add_argument("--out", help="write benchmark report to file")
+    benchmark.set_defaults(func=cmd_benchmark)
     return parser
 
 
