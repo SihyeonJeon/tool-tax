@@ -4,7 +4,9 @@
 
 `tool-tax doctor` reads Claude Code, Cursor, VS Code, and Cline MCP configs,
 probes stdio servers with `tools/list`, and shows how much tool-schema text your
-agent may load before the user asks a question.
+agent may load before the user asks a question. It also flags risky config
+shapes such as literal secrets, shell-eval commands, unpinned package runners,
+and broad filesystem scopes.
 
 It also scans JSON/YAML tool manifests and OpenAPI files, diffs catalog changes
 in CI, writes a slim progressive-loading index, and can test whether a
@@ -17,6 +19,7 @@ pipx install tool-tax
 
 tool-tax doctor --mcp-config .mcp.json
 tool-tax doctor --include-global --no-probe
+tool-tax doctor --mcp-config .mcp.json --no-probe --fail-on-risk-level high
 tool-tax scan examples
 tool-tax diff old-tools.json new-tools.json
 tool-tax pack examples --out .tool-tax
@@ -59,6 +62,7 @@ loaded up front, your agent pays a context tax before it starts working.
 - Inspects project and user MCP config files for Claude Code, Cursor, VS Code,
   and Cline.
 - Probes live MCP stdio servers through `initialize` + `tools/list`.
+- Flags MCP config risks before probing a server.
 - Estimates token cost for each tool schema.
 - Ranks the most expensive tools.
 - Diffs base/head catalogs for PR budget checks.
@@ -78,7 +82,7 @@ pipx install tool-tax
 From GitHub:
 
 ```bash
-pipx install git+https://github.com/SihyeonJeon/tool-tax.git@v0.8.0
+pipx install git+https://github.com/SihyeonJeon/tool-tax.git@v0.9.0
 ```
 
 From a clone:
@@ -99,6 +103,7 @@ Inspect an MCP config:
 tool-tax doctor --mcp-config .mcp.json
 tool-tax doctor --mcp-config .cursor/mcp.json --format json
 tool-tax doctor --include-global --no-probe
+tool-tax doctor --mcp-config .mcp.json --no-probe --fail-on-risk-level medium
 ```
 
 Scan a repo:
@@ -165,7 +170,7 @@ tool-tax pack openapi.json --operation "PostPayment*" --out .tool-tax-payments
 Use it as a GitHub Action:
 
 ```yaml
-- uses: SihyeonJeon/tool-tax@v0.8.0
+- uses: SihyeonJeon/tool-tax@v0.9.0
   with:
     path: .
     max-tokens: "12000"
@@ -216,6 +221,9 @@ Public catalog benchmark:
 [10 catalogs, 3,429 tools, 1,442,056 estimated schema tokens](docs/benchmarks/public-catalogs-2026-05-25.md).
 The benchmark corpus drops to a 169,423-token slim index before exact schemas
 are fetched.
+
+Config risk lint sample:
+[2 servers, 5 findings, high risk](docs/benchmarks/doctor-risk-lint-2026-05-25.md).
 
 | Catalog | Tools | Full tool tax | Slim index | Slim-index savings |
 | --- | ---: | ---: | ---: | ---: |

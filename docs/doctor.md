@@ -8,6 +8,7 @@ It is the quickest way to answer:
 - How many tools does this agent config expose?
 - Which MCP server contributes the most schema text?
 - Would a slim index have high upside?
+- Does the config contain risky command, env, or filesystem scope patterns?
 - Should CI fail when the configured tool surface grows?
 
 ## Usage
@@ -17,6 +18,7 @@ tool-tax doctor --mcp-config .mcp.json
 tool-tax doctor --mcp-config .cursor/mcp.json --format json
 tool-tax doctor --mcp-config .mcp.json --max-tokens 12000
 tool-tax doctor --include-global --no-probe
+tool-tax doctor --mcp-config .mcp.json --no-probe --fail-on-risk-level high
 ```
 
 Without `--mcp-config`, `doctor` looks for common project files:
@@ -59,6 +61,30 @@ It also supports VS Code-style top-level `servers` JSON.
 Only stdio servers are probed. Disabled servers and URL-based HTTP/SSE servers
 are reported as skipped.
 
+## Config Risk Lint
+
+`doctor` lints config shape before probing a server. The risk check is local and
+works with `--no-probe`.
+
+It flags:
+
+- literal values assigned to sensitive env keys such as `TOKEN`, `SECRET`,
+  `PASSWORD`, `API_KEY`, and `COOKIE`;
+- shell-eval commands such as `bash -c` or `powershell -Command`;
+- shell command chains and pipes;
+- unpinned package runners such as `npx -y some-package`;
+- filesystem MCP servers scoped to `/`, the user home directory, or the whole
+  workspace.
+
+For CI:
+
+```bash
+tool-tax doctor --mcp-config .mcp.json --no-probe --fail-on-risk-level medium
+```
+
+`--fail-on-risk-level` accepts `low`, `medium`, or `high` and exits with code 2
+when the config reaches that severity.
+
 ## Host Notes
 
 | Host | Project config | User config | Notes |
@@ -77,6 +103,9 @@ Example host configs live in [examples/host-configs](../examples/host-configs).
 
 For a real config probe, see the
 [Doctor host config benchmark](doctor-host-config-benchmark.md).
+
+For a no-probe config lint sample, see the
+[Doctor risk lint sample](benchmarks/doctor-risk-lint-2026-05-25.md).
 
 ## Security Boundary
 

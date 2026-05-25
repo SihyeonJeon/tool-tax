@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.9.0
+
+- Added MCP config risk linting to `tool-tax doctor`.
+- Flagged literal sensitive env values, shell-eval commands, unpinned package
+  runners, and broad filesystem server scopes.
+- Added `--fail-on-risk-level` for CI gates on config risk severity.
+
 ## 0.8.0
 
 - Added `tool-tax benchmark` for summarizing multiple scan reports from a

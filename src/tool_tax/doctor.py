@@ -24,6 +24,8 @@ class MCPConfigServer:
     display_command: list[str]
     cwd: Path | None = None
     env: dict[str, str] | None = None
+    display_env: dict[str, str] | None = None
+    context_dir: Path | None = None
     transport: str = "stdio"
     disabled: bool = False
 
@@ -45,6 +47,13 @@ GLOBAL_CONFIG_NAMES = (
     ".config/Code/User/globalStorage/saoudrizwan.claude-dev/settings/cline_mcp_settings.json",
 )
 VAR_PATTERN = re.compile(r"\$\{([^}]+)\}")
+SENSITIVE_ENV_PATTERN = re.compile(
+    r"(TOKEN|SECRET|PASSWORD|PASS|API[_-]?KEY|CREDENTIAL|AUTH|PRIVATE|SESSION|COOKIE)",
+    re.IGNORECASE,
+)
+RISK_RANKS = {"none": 0, "low": 1, "medium": 2, "high": 3}
+SHELL_COMMANDS = {"sh", "bash", "zsh", "fish", "cmd", "powershell", "pwsh"}
+REMOTE_PACKAGE_RUNNERS = {"npx", "bunx", "uvx", "pipx"}
 
 
 def discover_config_paths(cwd: Path, include_global: bool = False, home: Path | None = None) -> list[Path]:
@@ -173,6 +182,13 @@ def _expanded_env(raw: JsonObject, context_dir: Path, home: Path) -> dict[str, s
     return {key: _expand_string(value, context_dir, home) for key, value in env.items()}
 
 
+def _display_env(raw: JsonObject, context_dir: Path, home: Path) -> dict[str, str] | None:
+    env = _string_map(raw.get("env"))
+    if env is None:
+        return None
+    return {key: _expand_string(value, context_dir, home, redact=True) for key, value in env.items()}
+
+
 def load_mcp_config(
     path: Path,
     project_root: Path | None = None,
@@ -205,6 +221,7 @@ def load_mcp_config(
                         source_path=path,
                         source_label=source_label,
                         display_command=[],
+                        context_dir=context_dir,
                         transport=transport,
                         disabled=disabled,
                     )
@@ -228,6 +245,8 @@ def load_mcp_config(
                     display_command=display_command,
                     cwd=cwd,
                     env=_expanded_env(raw, context_dir, home),
+                    display_env=_display_env(raw, context_dir, home),
+                    context_dir=context_dir,
                     transport="stdio",
                     disabled=disabled,
                 )
@@ -254,6 +273,206 @@ def command_label(command: list[str]) -> str:
     return " ".join(shlex.quote(part) for part in command)
 
 
+def lint_config_risks(config: MCPConfigServer, home: Path | None = None) -> list[JsonObject]:
+    if config.disabled:
+        return []
+    findings: list[JsonObject] = []
+    if config.transport != "stdio":
+        return findings
+    home = home or Path.home()
+    findings.extend(_lint_env(config))
+    findings.extend(_lint_command(config))
+    findings.extend(_lint_filesystem_scope(config, home))
+    return findings
+
+
+def risk_grade(findings: list[JsonObject]) -> str:
+    if not findings:
+        return "none"
+    return max((str(finding["severity"]) for finding in findings), key=lambda item: RISK_RANKS[item])
+
+
+def _risk(
+    code: str,
+    severity: str,
+    message: str,
+    *,
+    evidence: str | None = None,
+) -> JsonObject:
+    out: JsonObject = {
+        "code": code,
+        "severity": severity,
+        "message": message,
+    }
+    if evidence:
+        out["evidence"] = evidence
+    return out
+
+
+def _lint_env(config: MCPConfigServer) -> list[JsonObject]:
+    env = config.display_env or {}
+    findings: list[JsonObject] = []
+    for key, value in env.items():
+        if not SENSITIVE_ENV_PATTERN.search(key):
+            continue
+        evidence = f"env.{key}"
+        if value and "${" not in value:
+            findings.append(
+                _risk(
+                    "LITERAL_SECRET_ENV",
+                    "high",
+                    "sensitive environment variable appears to be stored as a literal config value",
+                    evidence=evidence,
+                )
+            )
+        else:
+            findings.append(
+                _risk(
+                    "SENSITIVE_ENV_FORWARD",
+                    "medium",
+                    "server receives a sensitive environment variable",
+                    evidence=evidence,
+                )
+            )
+    return findings
+
+
+def _lint_command(config: MCPConfigServer) -> list[JsonObject]:
+    command = config.display_command or config.command
+    if not command:
+        return []
+    executable = Path(command[0]).name.lower()
+    findings: list[JsonObject] = []
+    if executable in SHELL_COMMANDS and _uses_shell_eval(command):
+        findings.append(
+            _risk(
+                "SHELL_EVAL_COMMAND",
+                "high",
+                "server command runs through a shell evaluation flag",
+                evidence=command_label(command[:3]),
+            )
+        )
+        shell_script = " ".join(command[2:])
+        if _has_shell_chain(shell_script):
+            findings.append(
+                _risk(
+                    "SHELL_CHAIN_COMMAND",
+                    "high",
+                    "shell command contains chaining or pipe syntax",
+                    evidence=_clip(shell_script),
+                )
+            )
+    if executable in REMOTE_PACKAGE_RUNNERS:
+        package = _runner_package(command)
+        if package and not _package_is_pinned(package):
+            findings.append(
+                _risk(
+                    "UNPINNED_PACKAGE_RUNNER",
+                    "medium",
+                    f"{executable} launches an unpinned package",
+                    evidence=package,
+                )
+            )
+    return findings
+
+
+def _lint_filesystem_scope(config: MCPConfigServer, home: Path) -> list[JsonObject]:
+    command = config.command
+    display = config.display_command or command
+    joined = " ".join(display).lower()
+    if "filesystem" not in joined and "file-system" not in joined:
+        return []
+    findings: list[JsonObject] = []
+    context_dir = (config.context_dir or config.source_path.parent).expanduser().resolve()
+    home_resolved = home.expanduser().resolve()
+    for raw in command[1:]:
+        if raw.startswith("-"):
+            continue
+        path = _path_candidate(raw)
+        if path is None:
+            continue
+        label = _matching_display_arg(raw, command, display)
+        if path == Path("/"):
+            findings.append(
+                _risk(
+                    "FILESYSTEM_ROOT_SCOPE",
+                    "high",
+                    "filesystem server is scoped to the root directory",
+                    evidence=label,
+                )
+            )
+        elif path == home_resolved:
+            findings.append(
+                _risk(
+                    "FILESYSTEM_HOME_SCOPE",
+                    "high",
+                    "filesystem server is scoped to the user home directory",
+                    evidence=label,
+                )
+            )
+        elif path == context_dir:
+            findings.append(
+                _risk(
+                    "FILESYSTEM_WORKSPACE_SCOPE",
+                    "medium",
+                    "filesystem server is scoped to the whole workspace",
+                    evidence=label,
+                )
+            )
+    return findings
+
+
+def _uses_shell_eval(command: list[str]) -> bool:
+    flags = {part.lower() for part in command[1:3]}
+    return bool(flags & {"-c", "/c", "-command", "-encodedcommand"})
+
+
+def _has_shell_chain(value: str) -> bool:
+    return any(token in value for token in ("|", "&&", "||", ";", "$(", "`"))
+
+
+def _runner_package(command: list[str]) -> str | None:
+    for arg in command[1:]:
+        if arg == "--":
+            continue
+        if arg.startswith("-"):
+            continue
+        return arg
+    return None
+
+
+def _package_is_pinned(package: str) -> bool:
+    if package.startswith("@"):
+        parts = package.split("/")
+        return len(parts) >= 2 and "@" in parts[-1]
+    return "@" in package
+
+
+def _path_candidate(value: str) -> Path | None:
+    if value in {".", "~"}:
+        return Path(value).expanduser().resolve()
+    if value.startswith("~/"):
+        return Path(value).expanduser().resolve()
+    path = Path(value).expanduser()
+    if not path.is_absolute():
+        return None
+    return path.resolve()
+
+
+def _matching_display_arg(raw: str, command: list[str], display: list[str]) -> str:
+    try:
+        index = command.index(raw)
+    except ValueError:
+        return raw
+    if index < len(display):
+        return display[index]
+    return raw
+
+
+def _clip(value: str, max_len: int = 96) -> str:
+    return value if len(value) <= max_len else value[: max_len - 3] + "..."
+
+
 def server_row(
     config: MCPConfigServer,
     probe: bool,
@@ -261,11 +480,15 @@ def server_row(
     protocol_version: str,
     verbose: bool,
 ) -> JsonObject:
+    risks = lint_config_risks(config)
     base: JsonObject = {
         "name": config.name,
         "config_path": config.source_label,
         "transport": config.transport,
         "command": command_label(config.display_command) if config.display_command else "",
+        "risk_count": len(risks),
+        "risk_grade": risk_grade(risks),
+        "risk_findings": risks,
     }
     if config.disabled:
         return {**base, "status": "disabled", "reason": "disabled in config"}
@@ -320,6 +543,12 @@ def doctor_report(
     error_rows = [row for row in rows if row.get("status") == "error"]
     skipped_rows = [row for row in rows if row.get("status") in {"skipped", "disabled"}]
     worst = max((int(row.get("worst_tool_tokens", 0)) for row in rows), default=0)
+    risk_counts = {
+        level: sum(1 for row in rows for finding in row.get("risk_findings", []) if finding.get("severity") == level)
+        for level in ("low", "medium", "high")
+    }
+    risk_count = sum(risk_counts.values())
+    max_risk = max((str(row.get("risk_grade", "none")) for row in rows), key=lambda item: RISK_RANKS[item], default="none")
     return {
         "summary": {
             "config_count": len(paths),
@@ -335,6 +564,11 @@ def doctor_report(
             else 0.0,
             "worst_tool_tokens": worst,
             "grade": grade(total_tax),
+            "risk_count": risk_count,
+            "risk_low_count": risk_counts["low"],
+            "risk_medium_count": risk_counts["medium"],
+            "risk_high_count": risk_counts["high"],
+            "risk_grade": max_risk,
         },
         "servers": rows,
         "errors": errors,
@@ -352,6 +586,7 @@ def doctor_markdown(payload: JsonObject) -> str:
         f"| Servers | {summary['server_count']} |",
         f"| Probed | {summary['probed_count']} |",
         f"| Grade | {summary['grade']} |",
+        f"| Config risks | {summary['risk_count']} ({summary['risk_grade']}) |",
         f"| Total tool tax | {summary['total_tax_tokens']:,} est. tokens |",
         f"| Slim index | {summary['total_index_tokens']:,} est. tokens |",
         f"| Slim-index savings | {summary['estimated_savings_tokens']:,} est. tokens ({summary['estimated_savings_percent']:.1f}%) |",
@@ -368,6 +603,27 @@ def doctor_markdown(payload: JsonObject) -> str:
             f"{row.get('total_tax_tokens', 0):,} | {row.get('worst_tool_tokens', 0):,} | "
             f"`{row['config_path']}` |"
         )
+    risk_rows = [
+        (row, finding)
+        for row in payload["servers"]
+        for finding in row.get("risk_findings", [])
+    ]
+    if risk_rows:
+        lines.extend(
+            [
+                "",
+                "## Config Risks",
+                "",
+                "| Server | Severity | Code | Finding |",
+                "| --- | --- | --- | --- |",
+            ]
+        )
+        for row, finding in risk_rows:
+            evidence = f" `{_md_cell(finding['evidence'])}`" if finding.get("evidence") else ""
+            lines.append(
+                f"| `{row['name']}` | {finding['severity']} | `{finding['code']}` | "
+                f"{_md_cell(finding['message'])}{evidence} |"
+            )
     errors = list(payload.get("errors") or [])
     for row in payload["servers"]:
         errors.extend(row.get("errors", []))
@@ -376,3 +632,7 @@ def doctor_markdown(payload: JsonObject) -> str:
         lines.extend(f"- `{error}`" for error in errors)
     lines.append("")
     return "\n".join(lines)
+
+
+def _md_cell(value: object) -> str:
+    return str(value).replace("|", "\\|").replace("\n", " ")

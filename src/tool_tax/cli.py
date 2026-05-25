@@ -142,6 +142,9 @@ def cmd_doctor(args: argparse.Namespace) -> int:
     if args.fail_on_grade:
         ranks = {"lean": 0, "warm": 1, "expensive": 2, "brutal": 3}
         failed = ranks[summary["grade"]] >= ranks[args.fail_on_grade]
+    if args.fail_on_risk_level:
+        ranks = {"none": 0, "low": 1, "medium": 2, "high": 3}
+        failed = ranks[summary["risk_grade"]] >= ranks[args.fail_on_risk_level]
     return 2 if failed else 0
 
 
@@ -269,6 +272,7 @@ def build_parser() -> argparse.ArgumentParser:
     doctor.add_argument("--max-tokens", type=int, help="fail if total configured MCP tool tax is above this")
     doctor.add_argument("--max-server-tokens", type=int, help="fail if one configured MCP server is above this")
     doctor.add_argument("--fail-on-grade", choices=["lean", "warm", "expensive", "brutal"])
+    doctor.add_argument("--fail-on-risk-level", choices=["low", "medium", "high"])
     doctor.add_argument("--github-step-summary", action="store_true", help="append Markdown report to GitHub step summary")
     doctor.set_defaults(func=cmd_doctor)
 

