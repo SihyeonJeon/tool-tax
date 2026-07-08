@@ -99,6 +99,17 @@ class ExtractTests(unittest.TestCase):
         self.assertEqual([record.name for record in path_records], ["list_users"])
         self.assertEqual([record.name for record in op_records], ["create_run"])
 
+    def test_extracts_xquik_openapi_fixture_by_tag(self) -> None:
+        records, errors = extract_tools(
+            [Path("examples/xquik-openapi.json")],
+            ExtractOptions(openapi_tags=("Tweets",)),
+        )
+
+        self.assertEqual(errors, [])
+        self.assertEqual([record.name for record in records], ["searchTweets"])
+        self.assertEqual(records[0].source_path, "examples/xquik-openapi.json")
+        self.assertEqual(records[0].pointer, "/paths//x/tweets/search/get")
+
     def test_extracts_yaml_tool_manifest(self) -> None:
         records, errors = extract_tools([Path("examples/mcp-tools.yml")])
         self.assertEqual(errors, [])
