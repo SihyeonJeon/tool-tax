@@ -167,6 +167,13 @@ tool-tax scan openapi.json --path /v1/payment_intents
 tool-tax pack openapi.json --operation "PostPayment*" --out .tool-tax-payments
 ```
 
+The repository includes `examples/xquik-openapi.json` as a small public OpenAPI
+fixture for checking tag filters against X data operations:
+
+```bash
+tool-tax scan examples/xquik-openapi.json --tag Tweets
+```
+
 Use it as a GitHub Action:
 
 ```yaml
